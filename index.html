@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="IT specialist portfolio featuring troubleshooting guides, web apps, IT news, and faith-centered technology insights." />
+  <title>RootedByte | IT Specialist Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="RootedByte home">
+      <span class="brand-mark">T</span>
+      <span>RootedByte</span>
+    </a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" class="site-nav">
+      <a href="#apps">Apps</a>
+      <a href="#tips">Tips</a>
+      <a href="#news">IT News</a>
+      <a href="#faith">Faith + IT</a>
+      <a href="#contact" class="nav-cta">Contact</a>
+    </nav>
+  </header>
+
+  <main id="home">
+    <section class="hero section-wrap">
+      <div class="hero-copy reveal">
+        <p class="eyebrow">IT Support • Web Apps • Digital Truth</p>
+        <h1>Helping people solve tech problems and build with purpose.</h1>
+        <p class="hero-text">I am an IT specialist creating practical troubleshooting guides, useful web apps, daily technology insights, and faith-rooted reflections for people who want clarity in a noisy digital world.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#apps">View my apps</a>
+          <a class="button secondary" href="#contact">Work with me</a>
+        </div>
+      </div>
+      <div class="hero-panel reveal" aria-label="Portfolio summary card">
+        <div class="status-dot"></div>
+        <h2>Available for IT support, app ideas, and web projects.</h2>
+        <div class="metric-grid">
+          <div><strong>01</strong><span>Portfolio hub</span></div>
+          <div><strong>02</strong><span>Signature apps</span></div>
+          <div><strong>03</strong><span>Guides + news</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-wrap section-intro reveal">
+      <p class="eyebrow">What this site is for</p>
+      <h2>A home base for your IT career, projects, and mission.</h2>
+      <p>This site is designed to present your IT skills professionally while also giving visitors real value through troubleshooting tips, app demos, news, and Christian reflections on technology, truth, and service.</p>
+    </section>
+
+    <section id="apps" class="section-wrap">
+      <div class="section-heading reveal">
+        <p class="eyebrow">Featured web apps</p>
+        <h2>Projects I am building</h2>
+      </div>
+      <div class="cards three">
+        <article class="card reveal">
+          <span class="card-tag">Portfolio App</span>
+          <h3>IT Support Knowledge Hub</h3>
+          <p>A searchable collection of fixes for Windows, networking, security, backups, printers, accounts, and everyday user issues.</p>
+          <a href="#tips">Explore troubleshooting</a>
+        </article>
+        <article class="card reveal">
+          <span class="card-tag">Music Tech</span>
+          <h3>Song Tone Finder</h3>
+          <p>Paste a song name or link and receive a practical Line 6 POD Go starting-point tone: amp, cab, EQ, drive, delay, and reverb suggestions.</p>
+          <a href="#roadmap">See build roadmap</a>
+        </article>
+        <article class="card reveal">
+          <span class="card-tag">Faith + News</span>
+          <h3>Versify</h3>
+          <p>Paste an article link, follow the story, save it to your collection, and reflect using NIV Bible verse connections, journaling, and prayer prompts.</p>
+          <a href="#versify">View concept</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="tips" class="section-wrap split-section">
+      <div class="reveal">
+        <p class="eyebrow">Troubleshooting tips</p>
+        <h2>Simple fixes users can understand.</h2>
+        <p>Use this section as a blog for practical, searchable IT help. Each guide should explain the symptom, likely cause, steps to fix it, and when to ask for help.</p>
+      </div>
+      <div class="tip-list reveal">
+        <button class="tip active" data-tip="Restart first, then check Task Manager, Startup Apps, disk space, and Windows Update history.">Slow computer</button>
+        <button class="tip" data-tip="Check Wi-Fi signal, reboot modem/router, test Ethernet, renew IP address, and confirm DNS settings.">Internet issues</button>
+        <button class="tip" data-tip="Look for urgency, mismatched sender domains, suspicious links, unexpected attachments, and login requests.">Phishing emails</button>
+        <button class="tip" data-tip="Use 3-2-1 backups: three copies, two storage types, one off-site or cloud copy.">Backups</button>
+        <p id="tip-output" class="tip-output">Restart first, then check Task Manager, Startup Apps, disk space, and Windows Update history.</p>
+      </div>
+    </section>
+
+    <section id="news" class="section-wrap dark-panel reveal">
+      <div>
+        <p class="eyebrow">Daily IT news</p>
+        <h2>Important updates for IT folks.</h2>
+        <p>Publish short daily notes about security patches, Windows updates, AI tools, cloud outages, scams, privacy, and practical tech changes that affect families, churches, small businesses, and everyday users.</p>
+      </div>
+      <form class="newsletter" onsubmit="return false;">
+        <label for="email">Get updates</label>
+        <div>
+          <input id="email" type="email" placeholder="you@example.com" />
+          <button class="button primary" type="submit">Join</button>
+        </div>
+        <small>Connect this later to Buttondown, ConvertKit, Mailchimp, or Supabase.</small>
+      </form>
+    </section>
+
+    <section id="faith" class="section-wrap split-section">
+      <div class="reveal">
+        <p class="eyebrow">Faith + IT</p>
+        <h2>Technology should serve truth, not replace it.</h2>
+        <p>This section can share thoughtful Christian reflections about honesty, stewardship, wisdom, privacy, service, humility, and using technology to help people rather than manipulate them.</p>
+      </div>
+      <div class="quote-card reveal">
+        <p>“Build tools that help people see clearly, act wisely, and serve faithfully.”</p>
+      </div>
+    </section>
+
+    <section id="versify" class="section-wrap app-preview reveal">
+      <p class="eyebrow">Signature app concept</p>
+      <h2>Versify article reflection flow</h2>
+      <div class="mock-app">
+        <input type="url" placeholder="Paste a news article link..." />
+        <button class="button primary">Analyze article</button>
+        <div class="mock-result">
+          <span>Verse relativity</span>
+          <div class="meter"><i style="width: 82%"></i></div>
+          <strong>82%</strong>
+        </div>
+        <textarea placeholder="Write journal study and prayer point..."></textarea>
+      </div>
+    </section>
+
+    <section id="roadmap" class="section-wrap roadmap">
+      <div class="section-heading reveal">
+        <p class="eyebrow">Build roadmap</p>
+        <h2>How this grows after launch</h2>
+      </div>
+      <ol class="timeline">
+        <li class="reveal"><strong>Launch portfolio:</strong> publish this static site on Vercel or GitHub Pages.</li>
+        <li class="reveal"><strong>Add content:</strong> write 10 troubleshooting posts and 5 Faith + IT reflections.</li>
+        <li class="reveal"><strong>Build Versify:</strong> add accounts, saved articles, NIV API, journal posts, and sharing.</li>
+        <li class="reveal"><strong>Build Song Tone Finder:</strong> start with settings recommendations, then add audio analysis later.</li>
+      </ol>
+    </section>
+
+    <section id="contact" class="section-wrap contact reveal">
+      <p class="eyebrow">Contact</p>
+      <h2>Need help with IT, a website, or an app idea?</h2>
+      <p>Replace this with your real contact details before publishing.</p>
+      <div class="contact-links">
+        <a href="mailto:hello@example.com">hello@example.com</a>
+        <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© <span id="year"></span> RootedByte. Built for service, clarity, and truth.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
