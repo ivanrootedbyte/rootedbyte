@@ -3,170 +3,36 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="IT specialist portfolio featuring troubleshooting guides, web apps, IT news, and faith-centered technology insights." />
-  <title>RootedByte | IT Specialist Portfolio</title>
+  <meta name="description" content="RootedByte is a modern digital hub for connecting news, technology, music, culture, and daily life with Bible-rooted reflection." />
+  <title>RootedByte | Modern technology. Biblical clarity.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    :root { --bg:#f7f5ef; --ink:#151515; --muted:#64625e; --card:#fff; --line:#ded9ce; --accent:#1f6f5b; --accent-dark:#144839; --dark:#121715; --dark-card:#1b231f; --radius:28px; --shadow:0 24px 70px rgba(22,27,24,.12); }
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#e5efe6 0,transparent 38%),var(--bg);color:var(--ink)} a{color:inherit;text-decoration:none}
+    .site-header{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:18px clamp(18px,5vw,60px);background:rgba(247,245,239,.82);backdrop-filter:blur(18px);border-bottom:1px solid rgba(222,217,206,.75)}
+    .brand{display:inline-flex;align-items:center;gap:10px;font-weight:800}.brand-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:var(--ink);color:white}.site-nav{display:flex;align-items:center;gap:22px;color:var(--muted);font-weight:600}.site-nav a:hover{color:var(--ink)}.nav-cta{color:white!important;background:var(--ink);padding:11px 16px;border-radius:999px}.nav-toggle{display:none}
+    .section-wrap{width:min(1120px,calc(100% - 36px));margin:0 auto;padding:88px 0}.hero{min-height:78vh;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:44px}.eyebrow{color:var(--accent);text-transform:uppercase;letter-spacing:.16em;font-size:.76rem;font-weight:800}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(3rem,8vw,7rem);line-height:.89;letter-spacing:-.07em;margin-bottom:28px}h2{font-size:clamp(2rem,4vw,4rem);line-height:.96;letter-spacing:-.05em;margin-bottom:18px}h3{font-size:1.35rem;margin-bottom:12px}p{color:var(--muted);line-height:1.7}.hero-text{font-size:1.2rem;max-width:650px}.hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}.button{border:0;border-radius:999px;padding:14px 20px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.primary{background:var(--accent);color:white}.primary:hover{background:var(--accent-dark)}.secondary{background:white;border:1px solid var(--line)}
+    .hero-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:34px;box-shadow:var(--shadow);transform:rotate(1.5deg)}.status-dot{width:14px;height:14px;background:#32c875;border-radius:50%;box-shadow:0 0 0 8px rgba(50,200,117,.15);margin-bottom:28px}.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}.metric-grid div{background:#f3f0e8;border-radius:20px;padding:16px}.metric-grid strong{display:block;font-size:1.5rem}.metric-grid span{color:var(--muted);font-size:.85rem}.section-intro{max-width:850px;text-align:center}.section-heading{margin-bottom:24px}.cards{display:grid;gap:18px}.three{grid-template-columns:repeat(3,1fr)}.card,.quote-card,.mock-app{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:0 16px 46px rgba(22,27,24,.08)}.card-tag{display:inline-flex;color:var(--accent);background:#e4efe8;border-radius:999px;padding:7px 11px;font-size:.78rem;font-weight:800;margin-bottom:18px}.card a{font-weight:800;color:var(--accent)}.split-section{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}.dark-panel{background:var(--dark);color:white;border-radius:calc(var(--radius) + 10px);padding:48px;display:grid;grid-template-columns:1fr .85fr;gap:32px}.dark-panel p{color:#c5cdc7}.newsletter{background:var(--dark-card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:24px}.newsletter label{display:block;margin-bottom:12px;font-weight:800}.newsletter div{display:flex;gap:10px}input,textarea{width:100%;border:1px solid var(--line);border-radius:16px;padding:14px;font:inherit}textarea{min-height:110px;resize:vertical}.quote-card p{color:var(--ink);font-size:1.65rem;font-weight:800;line-height:1.3}.app-preview{text-align:center}.mock-app{margin:26px auto 0;max-width:720px;display:grid;gap:12px;text-align:left}.mock-result{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;background:#f3f0e8;border-radius:18px;padding:16px}.meter{height:12px;background:#d7d0c1;border-radius:999px;overflow:hidden}.meter i{display:block;height:100%;background:var(--accent);border-radius:inherit}.timeline{list-style:none;padding:0;margin:0;display:grid;gap:14px}.timeline li{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px}.contact{text-align:center}.contact-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:20px}.contact-links a{background:white;border:1px solid var(--line);border-radius:999px;padding:12px 16px;font-weight:800}.site-footer{text-align:center;padding:34px;border-top:1px solid var(--line)}.reveal{opacity:0;transform:translateY(18px);transition:.7s ease}.reveal.visible{opacity:1;transform:translateY(0)}
+    @media(max-width:840px){.nav-toggle{display:inline-flex;border:1px solid var(--line);background:white;border-radius:999px;padding:10px 14px;font-weight:800}.site-nav{display:none;position:absolute;top:72px;left:18px;right:18px;background:white;border:1px solid var(--line);border-radius:22px;padding:18px;flex-direction:column;align-items:stretch;box-shadow:var(--shadow)}.site-nav.open{display:flex}.hero,.split-section,.dark-panel{grid-template-columns:1fr}.three{grid-template-columns:1fr}.metric-grid{grid-template-columns:1fr}.newsletter div{flex-direction:column}h1{font-size:clamp(3.5rem,18vw,5rem)}}
+  </style>
 </head>
 <body>
-  <header class="site-header">
-    <a class="brand" href="#home" aria-label="RootedByte home">
-      <span class="brand-mark">T</span>
-      <span>RootedByte</span>
-    </a>
-    <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
-    <nav id="site-nav" class="site-nav">
-      <a href="#apps">Apps</a>
-      <a href="#tips">Tips</a>
-      <a href="#news">IT News</a>
-      <a href="#faith">Faith + IT</a>
-      <a href="#contact" class="nav-cta">Contact</a>
-    </nav>
-  </header>
-
+  <header class="site-header"><a class="brand" href="#home"><span class="brand-mark">R</span><span>RootedByte</span></a><button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button><nav id="site-nav" class="site-nav"><a href="#apps">Apps</a><a href="#news">News</a><a href="#faith">Faith + Tech</a><a href="#roadmap">Roadmap</a><a href="#contact" class="nav-cta">Contact</a></nav></header>
   <main id="home">
-    <section class="hero section-wrap">
-      <div class="hero-copy reveal">
-        <p class="eyebrow">IT Support • Web Apps • Digital Truth</p>
-        <h1>Helping people solve tech problems and build with purpose.</h1>
-        <p class="hero-text">I am an IT specialist creating practical troubleshooting guides, useful web apps, daily technology insights, and faith-rooted reflections for people who want clarity in a noisy digital world.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#apps">View my apps</a>
-          <a class="button secondary" href="#contact">Work with me</a>
-        </div>
-      </div>
-      <div class="hero-panel reveal" aria-label="Portfolio summary card">
-        <div class="status-dot"></div>
-        <h2>Available for IT support, app ideas, and web projects.</h2>
-        <div class="metric-grid">
-          <div><strong>01</strong><span>Portfolio hub</span></div>
-          <div><strong>02</strong><span>Signature apps</span></div>
-          <div><strong>03</strong><span>Guides + news</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-wrap section-intro reveal">
-      <p class="eyebrow">What this site is for</p>
-      <h2>A home base for your IT career, projects, and mission.</h2>
-      <p>This site is designed to present your IT skills professionally while also giving visitors real value through troubleshooting tips, app demos, news, and Christian reflections on technology, truth, and service.</p>
-    </section>
-
-    <section id="apps" class="section-wrap">
-      <div class="section-heading reveal">
-        <p class="eyebrow">Featured web apps</p>
-        <h2>Projects I am building</h2>
-      </div>
-      <div class="cards three">
-        <article class="card reveal">
-          <span class="card-tag">Portfolio App</span>
-          <h3>IT Support Knowledge Hub</h3>
-          <p>A searchable collection of fixes for Windows, networking, security, backups, printers, accounts, and everyday user issues.</p>
-          <a href="#tips">Explore troubleshooting</a>
-        </article>
-        <article class="card reveal">
-          <span class="card-tag">Music Tech</span>
-          <h3>Song Tone Finder</h3>
-          <p>Paste a song name or link and receive a practical Line 6 POD Go starting-point tone: amp, cab, EQ, drive, delay, and reverb suggestions.</p>
-          <a href="#roadmap">See build roadmap</a>
-        </article>
-        <article class="card reveal">
-          <span class="card-tag">Faith + News</span>
-          <h3>Versify</h3>
-          <p>Paste an article link, follow the story, save it to your collection, and reflect using NIV Bible verse connections, journaling, and prayer prompts.</p>
-          <a href="#versify">View concept</a>
-        </article>
-      </div>
-    </section>
-
-    <section id="tips" class="section-wrap split-section">
-      <div class="reveal">
-        <p class="eyebrow">Troubleshooting tips</p>
-        <h2>Simple fixes users can understand.</h2>
-        <p>Use this section as a blog for practical, searchable IT help. Each guide should explain the symptom, likely cause, steps to fix it, and when to ask for help.</p>
-      </div>
-      <div class="tip-list reveal">
-        <button class="tip active" data-tip="Restart first, then check Task Manager, Startup Apps, disk space, and Windows Update history.">Slow computer</button>
-        <button class="tip" data-tip="Check Wi-Fi signal, reboot modem/router, test Ethernet, renew IP address, and confirm DNS settings.">Internet issues</button>
-        <button class="tip" data-tip="Look for urgency, mismatched sender domains, suspicious links, unexpected attachments, and login requests.">Phishing emails</button>
-        <button class="tip" data-tip="Use 3-2-1 backups: three copies, two storage types, one off-site or cloud copy.">Backups</button>
-        <p id="tip-output" class="tip-output">Restart first, then check Task Manager, Startup Apps, disk space, and Windows Update history.</p>
-      </div>
-    </section>
-
-    <section id="news" class="section-wrap dark-panel reveal">
-      <div>
-        <p class="eyebrow">Daily IT news</p>
-        <h2>Important updates for IT folks.</h2>
-        <p>Publish short daily notes about security patches, Windows updates, AI tools, cloud outages, scams, privacy, and practical tech changes that affect families, churches, small businesses, and everyday users.</p>
-      </div>
-      <form class="newsletter" onsubmit="return false;">
-        <label for="email">Get updates</label>
-        <div>
-          <input id="email" type="email" placeholder="you@example.com" />
-          <button class="button primary" type="submit">Join</button>
-        </div>
-        <small>Connect this later to Buttondown, ConvertKit, Mailchimp, or Supabase.</small>
-      </form>
-    </section>
-
-    <section id="faith" class="section-wrap split-section">
-      <div class="reveal">
-        <p class="eyebrow">Faith + IT</p>
-        <h2>Technology should serve truth, not replace it.</h2>
-        <p>This section can share thoughtful Christian reflections about honesty, stewardship, wisdom, privacy, service, humility, and using technology to help people rather than manipulate them.</p>
-      </div>
-      <div class="quote-card reveal">
-        <p>“Build tools that help people see clearly, act wisely, and serve faithfully.”</p>
-      </div>
-    </section>
-
-    <section id="versify" class="section-wrap app-preview reveal">
-      <p class="eyebrow">Signature app concept</p>
-      <h2>Versify article reflection flow</h2>
-      <div class="mock-app">
-        <input type="url" placeholder="Paste a news article link..." />
-        <button class="button primary">Analyze article</button>
-        <div class="mock-result">
-          <span>Verse relativity</span>
-          <div class="meter"><i style="width: 82%"></i></div>
-          <strong>82%</strong>
-        </div>
-        <textarea placeholder="Write journal study and prayer point..."></textarea>
-      </div>
-    </section>
-
-    <section id="roadmap" class="section-wrap roadmap">
-      <div class="section-heading reveal">
-        <p class="eyebrow">Build roadmap</p>
-        <h2>How this grows after launch</h2>
-      </div>
-      <ol class="timeline">
-        <li class="reveal"><strong>Launch portfolio:</strong> publish this static site on Vercel or GitHub Pages.</li>
-        <li class="reveal"><strong>Add content:</strong> write 10 troubleshooting posts and 5 Faith + IT reflections.</li>
-        <li class="reveal"><strong>Build Versify:</strong> add accounts, saved articles, NIV API, journal posts, and sharing.</li>
-        <li class="reveal"><strong>Build Song Tone Finder:</strong> start with settings recommendations, then add audio analysis later.</li>
-      </ol>
-    </section>
-
-    <section id="contact" class="section-wrap contact reveal">
-      <p class="eyebrow">Contact</p>
-      <h2>Need help with IT, a website, or an app idea?</h2>
-      <p>Replace this with your real contact details before publishing.</p>
-      <div class="contact-links">
-        <a href="mailto:rootedbyte@outlook.com">rootedbyte@outlook.com</a>
-        <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
-        <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>
-      </div>
-    </section>
+    <section class="hero section-wrap"><div class="hero-copy reveal"><p class="eyebrow">Technology • News • Culture • Scripture</p><h1>Modern technology. Biblical clarity.</h1><p class="hero-text">RootedByte is a modern digital hub for learning about technology, following important stories, and reflecting on real life through Scripture-rooted wisdom.</p><div class="hero-actions"><a class="button primary" href="#apps">Explore the apps</a><a class="button secondary" href="#contact">Connect with me</a></div></div><div class="hero-panel reveal"><div class="status-dot"></div><h2>A portfolio and product lab rooted in truth.</h2><div class="metric-grid"><div><strong>03</strong><span>Focused apps</span></div><div><strong>01</strong><span>Clear mission</span></div><div><strong>NIV</strong><span>Bible reflection</span></div></div></div></section>
+    <section class="section-wrap section-intro reveal"><p class="eyebrow">What this site is for</p><h2>A place to connect the digital world with biblical truth.</h2><p>RootedByte is for people who want to understand news, technology, music, online content, and daily decisions without losing their roots. The goal is modern, open-minded, friendly, and always anchored in Scripture.</p></section>
+    <section id="apps" class="section-wrap"><div class="section-heading reveal"><p class="eyebrow">Three focused web apps</p><h2>RootedByte app ecosystem</h2></div><div class="cards three"><article class="card reveal"><span class="card-tag">Faith + News</span><h3>NewsVerse</h3><p>Paste a news article link, receive related NIV Bible passages, verse relativity percentage, Scripture reflection, Jesus Sees, Holy Spirit application, journal prompts, and prayer points, then save the story, related articles, prayers, and public or private reflections in one collection.</p><a href="#versify">Coming soon</a></article><article class="card reveal"><span class="card-tag">Technology Discernment</span><h3>TechLens Check</h3><p>Understand tech topics, headlines, viral claims, social posts, and online trends by checking truthfulness, wisdom, fear, manipulation, and biblical alignment.</p><a href="#roadmap">Coming soon</a></article><article class="card reveal"><span class="card-tag">Music Tech</span><h3>SongLens</h3><p>Paste a song link to learn the song’s meaning, themes, and message, then receive a practical Line 6 POD Go starting-point tone configuration for learning or playing it.</p><a href="#roadmap">Coming soon</a></article></div></section>
+    <section id="news" class="section-wrap dark-panel reveal"><div><p class="eyebrow">News + technology</p><h2>Follow the story without losing your roots.</h2><p>RootedByte can share short updates about technology, cybersecurity, AI, digital culture, online safety, and world events — then point users toward Scripture-rooted reflection instead of fear, confusion, or outrage.</p></div><form class="newsletter" onsubmit="return false;"><label for="email">Get RootedByte updates</label><div><input id="email" type="email" placeholder="you@example.com" /><button class="button primary" type="submit">Join</button></div><small>Coming soon: email updates for RootedByte app launches and reflections.</small></form></section>
+    <section id="faith" class="section-wrap split-section"><div class="reveal"><p class="eyebrow">Faith + technology</p><h2>Open-minded, modern, and rooted.</h2><p>The tone should be welcoming and thoughtful: not anti-technology, not fear-based, and not watered down. RootedByte can help people think clearly about truth, wisdom, stewardship, creativity, work, speech, and digital life.</p></div><div class="quote-card reveal"><p>“Understand the world without losing your roots.”</p></div></section>
+    <section id="versify" class="section-wrap app-preview reveal"><p class="eyebrow">Flagship app concept</p><h2>NewsVerse article reflection flow</h2><div class="mock-app"><input type="url" placeholder="Paste a news article link..." /><button class="button primary">Coming soon</button><div class="mock-result"><span>Verse relativity</span><div class="meter"><i style="width:82%"></i></div><strong>82%</strong></div><textarea placeholder="Write journal study and prayer point..."></textarea></div></section>
+    <section id="roadmap" class="section-wrap roadmap"><div class="section-heading reveal"><p class="eyebrow">Build roadmap</p><h2>How RootedByte grows after launch</h2></div><ol class="timeline"><li class="reveal"><strong>Phase 1:</strong> publish the personal portfolio and three-app concept page.</li><li class="reveal"><strong>Phase 2:</strong> build NewsVerse with article links, NIV verse matching, reflection sections, journaling, related stories, and save-to-collection.</li><li class="reveal"><strong>Phase 3:</strong> add accounts, private journals, public reflections, saved story collections, and related article suggestions.</li><li class="reveal"><strong>Phase 4:</strong> build SongLens with song meaning, theme analysis, and Line 6 POD Go tone configuration recommendations.</li></ol></section>
+    <section id="contact" class="section-wrap contact reveal"><p class="eyebrow">Contact</p><h2>Want to follow or collaborate with RootedByte?</h2><p>Reach out about RootedByte, collaboration ideas, early feedback, or future app demos.</p><div class="contact-links"><a href="mailto:rootedbyte@outlook.com">rootedbyte@outlook.com</a><a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a><a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a></div></section>
   </main>
-
-  <footer class="site-footer">
-    <p>© <span id="year"></span> RootedByte. Built for service, clarity, and truth.</p>
-  </footer>
-
-  <script src="script.js"></script>
+  <footer class="site-footer"><p>© <span id="year"></span> RootedByte. Built for digital wisdom rooted in truth.</p></footer>
+  <script>
+    const navToggle=document.querySelector('.nav-toggle');const siteNav=document.querySelector('.site-nav');navToggle?.addEventListener('click',()=>{const open=siteNav.classList.toggle('open');navToggle.setAttribute('aria-expanded',String(open));});document.querySelectorAll('.site-nav a').forEach(link=>{link.addEventListener('click',()=>{siteNav.classList.remove('open');navToggle.setAttribute('aria-expanded','false');});});const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting)entry.target.classList.add('visible');});},{threshold:.15});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));document.getElementById('year').textContent=new Date().getFullYear();
+  </script>
 </body>
 </html>
