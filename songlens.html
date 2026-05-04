@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SongLens | RootedByte</title>
+  <meta name="description" content="SongLens helps users learn a song's meaning, themes, and message while receiving practical Line 6 POD Go tone configuration suggestions." />
+  <style>
+    body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f5ef;color:#151515}
+    a{text-decoration:none;color:inherit}
+    header{display:flex;justify-content:space-between;align-items:center;padding:22px 6vw;border-bottom:1px solid #ded9ce;background:#f7f5ef}
+    .brand{font-weight:800}.back{font-weight:700;color:#1f6f5b}
+    main{width:min(1050px,calc(100% - 36px));margin:auto;padding:80px 0}
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center}
+    .eyebrow{color:#1f6f5b;text-transform:uppercase;letter-spacing:.16em;font-size:.75rem;font-weight:800}
+    h1{font-size:clamp(3rem,7vw,6rem);line-height:.9;letter-spacing:-.06em;margin:12px 0 24px}
+    h2{font-size:clamp(2rem,4vw,3.5rem);letter-spacing:-.04em;line-height:1;margin:0 0 18px}
+    h3{margin:0 0 10px}
+    p{color:#64625e;line-height:1.7}
+    .card{background:white;border:1px solid #ded9ce;border-radius:28px;padding:28px;box-shadow:0 16px 46px rgba(22,27,24,.08)}
+    .button{display:inline-flex;border-radius:999px;padding:14px 20px;background:#1f6f5b;color:white;font-weight:800;margin-top:12px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+    .demo{margin-top:60px}
+    input,select,textarea{width:100%;border:1px solid #ded9ce;border-radius:16px;padding:14px;font:inherit;box-sizing:border-box}
+    textarea{min-height:130px}
+    .demo-box{display:grid;gap:14px;margin-top:20px}
+    .result{background:#f3f0e8;border-radius:18px;padding:18px}
+    .result strong{display:block;margin-bottom:6px}
+    .tone-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .tone-grid div{background:#fff;border:1px solid #ded9ce;border-radius:16px;padding:14px}
+    footer{text-align:center;padding:34px;border-top:1px solid #ded9ce;color:#64625e}
+    @media(max-width:800px){.hero,.grid,.tone-grid{grid-template-columns:1fr}h1{font-size:3.5rem}}
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">RootedByte</a>
+    <a class="back" href="/">← Back to home</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Music Tech</p>
+        <h1>SongLens</h1>
+        <p>Paste a song link to learn the song’s meaning, themes, and message, then receive practical Line 6 POD Go tone settings for learning or playing it.</p>
+        <a class="button" href="#demo">Try the demo</a>
+      </div>
+      <div class="card">
+        <h2>What it does</h2>
+        <p>SongLens combines song study, guitar learning, and POD Go tone guidance so users can understand the music and get closer to the sound.</p>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><h3>Learn</h3><p>Identifies the song’s likely themes, meaning, emotional tone, and message from a shared link or song title.</p></div>
+      <div class="card"><h3>Play</h3><p>Suggests guitar learning focus such as clean rhythm, ambient lead, worship swells, gain staging, and timing feel.</p></div>
+      <div class="card"><h3>Configure</h3><p>Provides practical Line 6 POD Go starting-point settings for amp, cab, EQ, effects, delay, and reverb.</p></div>
+    </section>
+
+    <section id="demo" class="demo card">
+      <p class="eyebrow">Mini Demo</p>
+      <h2>Try a sample SongLens setup</h2>
+
+      <div class="demo-box">
+        <input placeholder="Paste song link or type song title..." />
+        <select>
+          <option>Ambient worship lead</option>
+          <option>Clean pop rhythm</option>
+          <option>Classic rock crunch</option>
+          <option>Modern worship swells</option>
+        </select>
+
+        <div class="result">
+          <strong>Song meaning lens</strong>
+          <p>This song style often carries themes of longing, surrender, hope, reflection, or emotional release. SongLens would explain the message before suggesting tone settings.</p>
+        </div>
+
+        <div class="result">
+          <strong>Playing focus</strong>
+          <p>Focus on dynamics, clean timing, tasteful delay repeats, and letting the chords breathe rather than overplaying.</p>
+        </div>
+
+        <div class="result">
+          <strong>Sample POD Go starting configuration</strong>
+          <div class="tone-grid">
+            <div><strong>Amp</strong><p>US Deluxe or AC-style clean</p></div>
+            <div><strong>Drive</strong><p>Low gain, level boosted</p></div>
+            <div><strong>EQ</strong><p>Cut harsh highs, keep mids clear</p></div>
+            <div><strong>Delay</strong><p>Dotted 8th, moderate mix</p></div>
+            <div><strong>Reverb</strong><p>Plate or Glitz, medium-high decay</p></div>
+            <div><strong>Tip</strong><p>Use expression pedal for swells</p></div>
+          </div>
+        </div>
+
+        <textarea placeholder="Write practice notes or tone adjustments..."></textarea>
+      </div>
+    </section>
+  </main>
+
+  <footer>© RootedByte. Song meaning and guitar tone — learned with clarity.</footer>
+</body>
+</html>
