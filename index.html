@@ -18,21 +18,23 @@
         <nav class="top-actions" aria-label="Primary navigation">
           <a href="community.html">Community</a>
           <a href="achievements.html">Growth</a>
-          <span>Activated <i class="activated-dot"></i></span>
+          <span class="status-text">Dormant <i class="activated-dot"></i></span>
         </nav>
       </header>
 
       <div class="home-stage">
+        <input class="orb-toggle" type="checkbox" id="orb-toggle" aria-hidden="true">
+
         <section class="start-pane" aria-label="Tap to begin">
-          <a class="orb-link" href="#activated" aria-label="Tap to reveal discovery categories">
+          <label class="orb-link orb-trigger" for="orb-toggle" aria-label="Tap to reveal discovery categories">
             <span class="orb" aria-hidden="true"></span>
-          </a>
+          </label>
           <div class="micro-label">Tap to begin</div>
-          <p class="mobile-note">Tap a sphere below to enter a discovery path.</p>
+          <p class="mobile-note">Tap the orb to reveal the discovery spheres.</p>
         </section>
 
         <section class="activation-pane" id="activated" aria-label="Activated category spheres">
-          <div class="orb-center"><span class="orb large" aria-hidden="true"></span></div>
+          <label class="orb-center" for="orb-toggle" aria-label="Return to single orb view"><span class="orb large" aria-hidden="true"></span></label>
 
           <a class="category-orb cat-word" href="input.html?mode=word" aria-label="The Word mode">
             <span class="category-content">
