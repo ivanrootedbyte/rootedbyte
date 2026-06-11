@@ -926,20 +926,36 @@ button,input,textarea{font:inherit}
   }
 }
 
-/* ===== RESET: USE SAME ORB CLOUD ON DESKTOP + MOBILE ===== */
+/* ===== FINAL ORB SYSTEM: DESKTOP + MOBILE ===== */
 
-/* hide the experimental mobile swiper entirely */
 .mobile-orb-swiper,
 .mobile-preview{
   display:none !important;
 }
 
-/* keep desktop orbit as the main system */
 .desktop-orbit{
   display:block !important;
 }
 
-/* desktop cleanup */
+/* branch-out animation */
+@keyframes orbBranchOut{
+  0%{
+    opacity:0;
+    transform:
+      translate(
+        calc(var(--origin-x, 0px) - var(--final-x, 0px)),
+        calc(var(--origin-y, 0px) - var(--final-y, 0px))
+      )
+      scale(.72);
+    filter:blur(8px);
+  }
+  100%{
+    opacity:1;
+    transform:translate(0,0) scale(1);
+    filter:blur(0);
+  }
+}
+
 @media screen and (min-width: 981px){
   .activation-pane{
     --orbit-x: 50%;
@@ -953,43 +969,83 @@ button,input,textarea{font:inherit}
   }
 
   .orb-center .orb.large{
-    width:230px;
-    height:230px;
+    width:220px;
+    height:220px;
+  }
+
+  .category-orb{
+    width:118px;
+    height:118px;
+  }
+
+  /* balanced desktop distances */
+  .cat-explorer{
+    --final-x:-250px;
+    --final-y:-150px;
+    --origin-x:0px;
+    --origin-y:0px;
+    left:calc(var(--orbit-x) - 250px);
+    top:calc(var(--orbit-y) - 150px);
   }
 
   .cat-word{
-    left:calc(var(--orbit-x) + 235px);
-    top:calc(var(--orbit-y) - 155px);
-  }
-
-  .cat-explorer{
-    left:calc(var(--orbit-x) - 255px);
-    top:calc(var(--orbit-y) - 145px);
-  }
-
-  .cat-movies{
-    left:calc(var(--orbit-x) + 330px);
-    top:calc(var(--orbit-y) - 5px);
+    --final-x:250px;
+    --final-y:-150px;
+    --origin-x:0px;
+    --origin-y:0px;
+    left:calc(var(--orbit-x) + 250px);
+    top:calc(var(--orbit-y) - 150px);
   }
 
   .cat-science{
-  left:calc(var(--orbit-x) - 182px);
-  top:calc(var(--orbit-y) + 38px);
-}
+    --final-x:-350px;
+    --final-y:10px;
+    --origin-x:0px;
+    --origin-y:0px;
+    left:calc(var(--orbit-x) - 350px);
+    top:calc(var(--orbit-y) + 10px);
+  }
 
-.cat-emotions{
-  left:calc(var(--orbit-x) - 136px);
-  top:calc(var(--orbit-y) + 154px);
-}
+  .cat-movies{
+    --final-x:350px;
+    --final-y:10px;
+    --origin-x:0px;
+    --origin-y:0px;
+    left:calc(var(--orbit-x) + 350px);
+    top:calc(var(--orbit-y) + 10px);
+  }
+
+  .cat-emotions{
+    --final-x:-250px;
+    --final-y:170px;
+    --origin-x:0px;
+    --origin-y:0px;
+    left:calc(var(--orbit-x) - 250px);
+    top:calc(var(--orbit-y) + 170px);
+  }
 
   .cat-life{
-    left:calc(var(--orbit-x) + 235px);
-    top:calc(var(--orbit-y) + 165px);
+    --final-x:250px;
+    --final-y:170px;
+    --origin-x:0px;
+    --origin-y:0px;
+    left:calc(var(--orbit-x) + 250px);
+    top:calc(var(--orbit-y) + 170px);
   }
 
   .cat-journal{
-    left:calc(var(--orbit-x) - 5px);
-    top:calc(var(--orbit-y) + 255px);
+    --final-x:0px;
+    --final-y:270px;
+    --origin-x:0px;
+    --origin-y:0px;
+    left:calc(var(--orbit-x) + 0px);
+    top:calc(var(--orbit-y) + 270px);
+  }
+
+  .orb-toggle:checked ~ .activation-pane .category-orb{
+    animation:
+      float 8s ease-in-out infinite,
+      orbBranchOut .62s cubic-bezier(.2,.9,.2,1) both;
   }
 
   .preview-panel{
@@ -999,19 +1055,13 @@ button,input,textarea{font:inherit}
   }
 }
 
-/* tablet + mobile: same orbit concept, scaled down */
 @media screen and (max-width: 980px){
   .frame{
     overflow:hidden;
   }
 
   .home-stage{
-    padding:78px 14px 28px;
-  }
-
-  .start-pane{
-    min-height:calc(100vh - 140px);
-    justify-content:center;
+    padding:78px 14px 24px;
   }
 
   .activation-pane{
@@ -1022,14 +1072,13 @@ button,input,textarea{font:inherit}
     overflow:hidden;
     pointer-events:auto;
     --orbit-x: 50%;
-    --orbit-y: 36%;
+    --orbit-y: 35%;
   }
 
   .orb-toggle:checked ~ .activation-pane{
     display:block;
   }
 
-  /* force only the orb cloud system */
   .desktop-orbit{
     display:block !important;
   }
@@ -1039,8 +1088,10 @@ button,input,textarea{font:inherit}
     display:none !important;
   }
 
-  .tiny-orb{
-    display:none;
+  .tiny-orb,
+  .preview-panel,
+  .desktop-preview{
+    display:none !important;
   }
 
   .orb-center{
@@ -1052,66 +1103,80 @@ button,input,textarea{font:inherit}
   }
 
   .orb-center .orb.large{
-    width:168px;
-    height:168px;
+    width:156px;
+    height:156px;
   }
 
   .category-orb{
-    width:96px;
-    height:96px;
+    width:88px;
+    height:88px;
     z-index:5;
   }
 
   .category-content{
-    font-size:12px;
-    gap:5px;
+    font-size:11px;
+    gap:4px;
   }
 
   .category-content svg{
-    width:22px;
-    height:22px;
+    width:20px;
+    height:20px;
   }
 
-  /* mobile cluster around the center orb */
+  /* balanced mobile distances, avoiding overlap */
   .cat-explorer{
-    left:calc(var(--orbit-x) - 165px);
-    top:calc(var(--orbit-y) - 95px);
+    --final-x:-135px;
+    --final-y:-78px;
+    left:calc(var(--orbit-x) - 135px);
+    top:calc(var(--orbit-y) - 78px);
   }
 
   .cat-word{
-    left:calc(var(--orbit-x) + 75px);
-    top:calc(var(--orbit-y) - 105px);
-  }
-
-  .cat-movies{
-    left:calc(var(--orbit-x) + 170px);
-    top:calc(var(--orbit-y) + 12px);
+    --final-x:135px;
+    --final-y:-78px;
+    left:calc(var(--orbit-x) + 135px);
+    top:calc(var(--orbit-y) - 78px);
   }
 
   .cat-science{
-    left:calc(var(--orbit-x) - 195px);
-    top:calc(var(--orbit-y) + 28px);
+    --final-x:-178px;
+    --final-y:14px;
+    left:calc(var(--orbit-x) - 178px);
+    top:calc(var(--orbit-y) + 14px);
+  }
+
+  .cat-movies{
+    --final-x:178px;
+    --final-y:14px;
+    left:calc(var(--orbit-x) + 178px);
+    top:calc(var(--orbit-y) + 14px);
   }
 
   .cat-emotions{
+    --final-x:-135px;
+    --final-y:132px;
     left:calc(var(--orbit-x) - 135px);
-    top:calc(var(--orbit-y) + 155px);
+    top:calc(var(--orbit-y) + 132px);
   }
 
   .cat-life{
-    left:calc(var(--orbit-x) + 105px);
-    top:calc(var(--orbit-y) + 160px);
+    --final-x:135px;
+    --final-y:132px;
+    left:calc(var(--orbit-x) + 135px);
+    top:calc(var(--orbit-y) + 132px);
   }
 
   .cat-journal{
-    left:calc(var(--orbit-x) - 10px);
-    top:calc(var(--orbit-y) + 235px);
+    --final-x:0px;
+    --final-y:212px;
+    left:calc(var(--orbit-x) + 0px);
+    top:calc(var(--orbit-y) + 212px);
   }
 
-  /* on mobile, hide big panel so it does not destroy the orb layout */
-  .preview-panel,
-  .desktop-preview{
-    display:none !important;
+  .orb-toggle:checked ~ .activation-pane .category-orb{
+    animation:
+      float 8s ease-in-out infinite,
+      orbBranchOut .62s cubic-bezier(.2,.9,.2,1) both;
   }
 
   .top-actions a{
@@ -1150,7 +1215,6 @@ button,input,textarea{font:inherit}
   }
 }
 
-/* smaller phones */
 @media screen and (max-width: 560px){
   .page-shell{
     padding:8px;
@@ -1171,56 +1235,56 @@ button,input,textarea{font:inherit}
   }
 
   .orb-center .orb.large{
-    width:150px;
-    height:150px;
+    width:146px;
+    height:146px;
   }
 
   .category-orb{
-    width:88px;
-    height:88px;
+    width:84px;
+    height:84px;
   }
 
   .category-content{
-    font-size:11px;
+    font-size:10.5px;
   }
 
   .category-content svg{
-    width:20px;
-    height:20px;
+    width:18px;
+    height:18px;
   }
 
   .cat-explorer{
-    left:calc(var(--orbit-x) - 145px);
-    top:calc(var(--orbit-y) - 78px);
+    left:calc(var(--orbit-x) - 128px);
+    top:calc(var(--orbit-y) - 72px);
   }
 
   .cat-word{
-    left:calc(var(--orbit-x) + 66px);
-    top:calc(var(--orbit-y) - 86px);
-  }
-
-  .cat-movies{
-    left:calc(var(--orbit-x) + 146px);
-    top:calc(var(--orbit-y) + 18px);
+    left:calc(var(--orbit-x) + 128px);
+    top:calc(var(--orbit-y) - 72px);
   }
 
   .cat-science{
-    left:calc(var(--orbit-x) - 168px);
-    top:calc(var(--orbit-y) + 24px);
+    left:calc(var(--orbit-x) - 166px);
+    top:calc(var(--orbit-y) + 18px);
+  }
+
+  .cat-movies{
+    left:calc(var(--orbit-x) + 166px);
+    top:calc(var(--orbit-y) + 18px);
   }
 
   .cat-emotions{
-    left:calc(var(--orbit-x) - 118px);
-    top:calc(var(--orbit-y) + 138px);
+    left:calc(var(--orbit-x) - 126px);
+    top:calc(var(--orbit-y) + 126px);
   }
 
   .cat-life{
-    left:calc(var(--orbit-x) + 90px);
-    top:calc(var(--orbit-y) + 144px);
+    left:calc(var(--orbit-x) + 126px);
+    top:calc(var(--orbit-y) + 126px);
   }
 
   .cat-journal{
-    left:calc(var(--orbit-x) - 8px);
-    top:calc(var(--orbit-y) + 208px);
+    left:calc(var(--orbit-x) + 0px);
+    top:calc(var(--orbit-y) + 198px);
   }
 }
