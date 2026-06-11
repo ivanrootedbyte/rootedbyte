@@ -823,14 +823,14 @@ button,input,textarea{font:inherit}
   }
 
   .cat-science{
-    left:calc(var(--orbit-x) - 230px);
-    top:calc(var(--orbit-y) + 18px);
-  }
+  left:calc(var(--orbit-x) - 210px);
+  top:calc(var(--orbit-y) + 42px);
+}
 
-  .cat-emotions{
-    left:calc(var(--orbit-x) - 175px);
-    top:calc(var(--orbit-y) + 170px);
-  }
+.cat-emotions{
+  left:calc(var(--orbit-x) - 155px);
+  top:calc(var(--orbit-y) + 172px);
+}
 
   .cat-life{
     left:calc(var(--orbit-x) + 135px);
@@ -973,14 +973,14 @@ button,input,textarea{font:inherit}
   }
 
   .cat-science{
-    left:calc(var(--orbit-x) - 355px);
-    top:calc(var(--orbit-y) + 10px);
-  }
+  left:calc(var(--orbit-x) - 182px);
+  top:calc(var(--orbit-y) + 38px);
+}
 
-  .cat-emotions{
-    left:calc(var(--orbit-x) - 255px);
-    top:calc(var(--orbit-y) + 170px);
-  }
+.cat-emotions{
+  left:calc(var(--orbit-x) - 136px);
+  top:calc(var(--orbit-y) + 154px);
+}
 
   .cat-life{
     left:calc(var(--orbit-x) + 235px);
