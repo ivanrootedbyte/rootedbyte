@@ -40,7 +40,10 @@
 
           <!-- DESKTOP ORBIT -->
           <div class="desktop-orbit" aria-hidden="false">
-            <a class="category-orb cat-word" href="input.html?mode=word" aria-label="The Word mode">
+            <a class="category-orb cat-word" href="input.html?mode=word" aria-label="The Word mode"
+   data-title="The Word"
+   data-glow="255,211,107"
+   data-desc="Open a Scripture-rooted path for clarity, truth, and grounded reflection. Begin with the Word, then turn it into a practical step.">
               <span class="category-content">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
                   <path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v11H8.5A3.5 3.5 0 0 1 5 15.5v-11Z"/>
@@ -51,7 +54,10 @@
               </span>
             </a>
 
-            <a class="category-orb cat-explorer" href="input.html?mode=explorer" aria-label="Truth Explorer mode">
+            <a class="category-orb cat-explorer" href="input.html?mode=explorer" aria-label="Truth Explorer mode"
+   data-title="Truth Explorer"
+   data-glow="141,92,255"
+   data-desc="Ask a real question and trace it toward what is true, steady, and worth living from.">
               <span class="category-content">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
                   <path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z"/>
@@ -61,7 +67,10 @@
               </span>
             </a>
 
-            <a class="category-orb cat-movies" href="input.html?category=movies" aria-label="Movies category">
+            <a class="category-orb cat-movies" href="input.html?category=movies" aria-label="Movies category"
+   data-title="Movies"
+   data-glow="255,110,168"
+   data-desc="Decode stories, characters, themes, and culture through a grounded truth lens.">
               <span class="category-content">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
                   <path d="M4 7h16v11H4z"/>
@@ -72,7 +81,10 @@
               </span>
             </a>
 
-            <a class="category-orb cat-science" href="input.html?category=science" aria-label="Science category">
+            <a class="category-orb cat-science" href="input.html?category=science" aria-label="Science category"
+   data-title="Science"
+   data-glow="141,247,198"
+   data-desc="Explore wonder, design, discovery, and the created world with curiosity and humility.">
               <span class="category-content">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
                   <path d="M9 3h6M10 3v5l-5 9a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 17l-5-9V3"/>
@@ -82,7 +94,10 @@
               </span>
             </a>
 
-            <a class="category-orb cat-emotions" href="input.html?category=emotions" aria-label="Emotions category">
+            <a class="category-orb cat-emotions" href="input.html?category=emotions" aria-label="Emotions category"
+   data-title="Emotions"
+   data-glow="255,126,104"
+   data-desc="Name what you feel, slow down your inner noise, and move toward a wiser next step.">
               <span class="category-content">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
                   <path d="M20.8 8.8c0 5.3-8.8 10.7-8.8 10.7S3.2 14.1 3.2 8.8A4.8 4.8 0 0 1 12 6.1a4.8 4.8 0 0 1 8.8 2.7Z"/>
@@ -91,7 +106,10 @@
               </span>
             </a>
 
-            <a class="category-orb cat-life active" href="input.html?category=life" aria-label="Life Questions category">
+            <a class="category-orb cat-life active" href="input.html?category=life" aria-label="Life Questions category"
+   data-title="Life Questions"
+   data-glow="94,183,255"
+   data-desc="Explore meaning, purpose, choices, relationships, and the human experience through a guided Truth Trail.">
               <span class="category-content">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
                   <path d="M12 18h.01"/>
@@ -102,7 +120,10 @@
               </span>
             </a>
 
-            <a class="category-orb cat-journal" href="journal.html" aria-label="Journal category">
+            <a class="category-orb cat-journal" href="journal.html" aria-label="Journal category"
+   data-title="Journal"
+   data-glow="218,235,255"
+   data-desc="Save your thoughts, revisit your growth, and turn reflection into a trail you can return to.">
               <span class="category-content">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
                   <path d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V4Z"/>
@@ -217,6 +238,25 @@
               </div>
             </aside>
           </div>
+
+          <aside class="orb-result-panel" id="orb-result-panel" aria-live="polite">
+            <div class="orb-result-top">
+              <div>
+                <div class="orb-result-kicker">Selected Sphere</div>
+                <h2 id="orb-result-title">Life Questions</h2>
+              </div>
+              <button class="orb-result-close" id="orb-result-close" type="button" aria-label="Close selected sphere preview">×</button>
+            </div>
+
+            <p id="orb-result-desc">
+              Explore meaning, purpose, choices, relationships, and the human experience through a guided Truth Trail.
+            </p>
+
+            <div class="orb-result-actions">
+              <a class="orb-result-secondary" href="#" id="orb-result-cancel">Keep Exploring</a>
+              <a class="orb-result-primary" href="input.html?category=life" id="orb-result-open">Open Sphere →</a>
+            </div>
+          </aside>
         </section>
       </div>
 
@@ -227,5 +267,43 @@
       </footer>
     </section>
   </main>
+  <script>
+    const categoryOrbs = document.querySelectorAll('.category-orb');
+    const resultPanel = document.getElementById('orb-result-panel');
+    const resultTitle = document.getElementById('orb-result-title');
+    const resultDesc = document.getElementById('orb-result-desc');
+    const resultOpen = document.getElementById('orb-result-open');
+    const resultClose = document.getElementById('orb-result-close');
+    const resultCancel = document.getElementById('orb-result-cancel');
+
+    categoryOrbs.forEach((orb) => {
+      orb.addEventListener('click', (event) => {
+        event.preventDefault();
+
+        categoryOrbs.forEach((item) => item.classList.remove('active'));
+        orb.classList.add('active');
+
+        const title = orb.dataset.title || orb.textContent.trim();
+        const desc = orb.dataset.desc || 'Open this sphere to continue your RootedOS trail.';
+        const glow = orb.dataset.glow || '94,183,255';
+        const href = orb.getAttribute('href');
+
+        resultTitle.textContent = title;
+        resultDesc.textContent = desc;
+        resultOpen.href = href;
+        resultPanel.style.setProperty('--result-glow', glow);
+        resultPanel.classList.add('show');
+      });
+    });
+
+    function closeOrbResult(event){
+      if(event) event.preventDefault();
+      resultPanel.classList.remove('show');
+    }
+
+    resultClose.addEventListener('click', closeOrbResult);
+    resultCancel.addEventListener('click', closeOrbResult);
+  </script>
+
 </body>
 </html>
