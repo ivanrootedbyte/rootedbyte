@@ -1,6 +1,7 @@
 (function () {
   const STORAGE_KEY = 'rootedosTrail';
   const JOURNAL_KEY = 'rootedosJournalEntries';
+  const SESSION_KEY = 'rootedosStudySession';
 
   const CATEGORY_META = {
     word: {
@@ -66,7 +67,11 @@
   };
 
   function safeParse(value, fallback) {
-    try { return JSON.parse(value); } catch (error) { return fallback; }
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return fallback;
+    }
   }
 
   function getStoredTrail() {
@@ -89,10 +94,57 @@
   }
 
   function saveJournalEntry(entry) {
+    const normalized = normalizeJournalEntry(entry);
     const entries = getJournalEntries();
-    entries.unshift(entry);
+    entries.unshift(normalized);
     setJournalEntries(entries);
-    return entry;
+    return normalized;
+  }
+
+  function getStudySession() {
+    return safeParse(localStorage.getItem(SESSION_KEY) || '{}', {});
+  }
+
+  function setStudySession(nextState) {
+    const now = new Date().toISOString();
+
+    const merged = Object.assign({}, getStudySession(), nextState, {
+      updatedAt: now
+    });
+
+    if (!merged.id) {
+      merged.id = 'session_' + Date.now();
+      merged.createdAt = now;
+    }
+
+    localStorage.setItem(SESSION_KEY, JSON.stringify(merged));
+    return merged;
+  }
+
+  function resetStudySession(category) {
+    const meta = CATEGORY_META[category] || CATEGORY_META.life;
+
+    const session = {
+      id: 'session_' + Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      category: category || 'life',
+      categoryTitle: meta.title,
+      input: '',
+      questionOne: '',
+      questionTwo: '',
+      theme: '',
+      biblicalParallel: '',
+      scriptureConnection: 'Scripture reference required (not generated)',
+      truthStatement: '',
+      studyTitle: '',
+      trailMap: null,
+      studyOutput: null,
+      savedJournalId: ''
+    };
+
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    return session;
   }
 
   function todayKey() {
@@ -103,96 +155,95 @@
     return yyyy + '-' + mm + '-' + dd;
   }
 
-  
   function dateLabel(dateKey) {
-  if (!dateKey) return 'Undated';
-  const parts = dateKey.split('-');
-  if (parts.length !== 3) return dateKey;
-  return parts[1] + '/' + parts[2] + '/' + parts[0];
-}
-
-  function addDaysToDateKey(baseDate, amount) {
-  const d = new Date(baseDate);
-  d.setDate(d.getDate() + amount);
-
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-
-  return yyyy + '-' + mm + '-' + dd;
-}
-
-function buildCalendarWindow() {
-  const today = new Date();
-  const days = [];
-
-  for (let offset = -3; offset <= 3; offset += 1) {
-    const dateKey = addDaysToDateKey(today, offset);
-    const label = offset === 0 ? 'Today' : dateKey.split('-')[2];
-
-    days.push({
-      dateKey: dateKey,
-      label: label,
-      isToday: offset === 0
-    });
+    if (!dateKey) return 'Undated';
+    const parts = dateKey.split('-');
+    if (parts.length !== 3) return dateKey;
+    return parts[1] + '/' + parts[2] + '/' + parts[0];
   }
 
-  return days;
-}
-  
-function escapeHTML(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+  function addDaysToDateKey(baseDate, amount) {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + amount);
 
-function normalizeJournalEntry(entry) {
-  return {
-    id: entry.id || 'journal_' + Date.now(),
-    dateKey: entry.dateKey || todayKey(),
-    createdAt: entry.createdAt || new Date().toISOString(),
-    source: entry.source || 'journal',
-    category: entry.category || getActiveCategory(),
-    categoryTitle: entry.categoryTitle || getMeta().title,
-    input: entry.input || '',
-    theme: entry.theme || '',
-    studyTitle: entry.studyTitle || entry.title || 'Saved Reflection',
-    text: entry.text || entry.content || '',
-    truthStatement: entry.truthStatement || '',
-    scriptureConnection: entry.scriptureConnection || 'Scripture reference required (not generated)',
-    biblicalParallel: entry.biblicalParallel || ''
-  };
-}
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
 
-function buildStudyJournalText(state, meta, theme, support) {
-  return [
-    'Study saved from RootedOS.',
-    '',
-    'Starting Point:',
-    state.input || meta.sampleInput || 'No starting point saved.',
-    '',
-    'Main Theme:',
-    theme || 'Truth Trail Theme',
-    '',
-    'Biblical Parallel:',
-    state.biblicalParallel || support.parallel || 'Scripture reference required (not generated)',
-    '',
-    'Scripture Connection:',
-    state.scriptureConnection || support.scripture || 'Scripture reference required (not generated)',
-    '',
-    'Truth Statement:',
-    state.truthStatement || support.truth || 'Truth statement not available yet.',
-    '',
-    'Reflection Prompts:',
-    '- What part of this trail felt most real?',
-    '- What truth should I remember this week?',
-    '- What Scripture passage needs to be verified before expanding this study?'
-  ].join('\n');
-}
-  
+    return yyyy + '-' + mm + '-' + dd;
+  }
+
+  function buildCalendarWindow() {
+    const today = new Date();
+    const days = [];
+
+    for (let offset = -3; offset <= 3; offset += 1) {
+      const dateKey = addDaysToDateKey(today, offset);
+      const label = offset === 0 ? 'Today' : dateKey.split('-')[2];
+
+      days.push({
+        dateKey: dateKey,
+        label: label,
+        isToday: offset === 0
+      });
+    }
+
+    return days;
+  }
+
+  function escapeHTML(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function normalizeJournalEntry(entry) {
+    return {
+      id: entry.id || 'journal_' + Date.now(),
+      dateKey: entry.dateKey || todayKey(),
+      createdAt: entry.createdAt || new Date().toISOString(),
+      source: entry.source || 'journal',
+      category: entry.category || getActiveCategory(),
+      categoryTitle: entry.categoryTitle || getMeta().title,
+      input: entry.input || '',
+      theme: entry.theme || '',
+      studyTitle: entry.studyTitle || entry.title || 'Saved Reflection',
+      text: entry.text || entry.content || '',
+      truthStatement: entry.truthStatement || '',
+      scriptureConnection: entry.scriptureConnection || 'Scripture reference required (not generated)',
+      biblicalParallel: entry.biblicalParallel || ''
+    };
+  }
+
+  function buildStudyJournalText(state, meta, theme, support) {
+    return [
+      'Study saved from RootedOS.',
+      '',
+      'Starting Point:',
+      state.input || meta.sampleInput || 'No starting point saved.',
+      '',
+      'Main Theme:',
+      theme || 'Truth Trail Theme',
+      '',
+      'Biblical Parallel:',
+      state.biblicalParallel || support.parallel || 'Scripture reference required (not generated)',
+      '',
+      'Scripture Connection:',
+      state.scriptureConnection || support.scripture || 'Scripture reference required (not generated)',
+      '',
+      'Truth Statement:',
+      state.truthStatement || support.truth || 'Truth statement not available yet.',
+      '',
+      'Reflection Prompts:',
+      '- What part of this trail felt most real?',
+      '- What truth should I remember this week?',
+      '- What Scripture passage needs to be verified before expanding this study?'
+    ].join('\n');
+  }
+
   function getQueryCategory() {
     const params = new URLSearchParams(window.location.search);
     const category = params.get('category');
@@ -212,7 +263,9 @@ function buildStudyJournalText(state, meta, theme, support) {
   }
 
   function titleCase(text) {
-    return (text || '').replace(/\b\w/g, function (char) { return char.toUpperCase(); });
+    return (text || '').replace(/\b\w/g, function (char) {
+      return char.toUpperCase();
+    });
   }
 
   function inferThemeFromInput(input) {
@@ -332,7 +385,10 @@ function buildStudyJournalText(state, meta, theme, support) {
       orb.addEventListener('click', function (event) {
         event.preventDefault();
 
-        categoryOrbs.forEach(function (item) { item.classList.remove('active'); });
+        categoryOrbs.forEach(function (item) {
+          item.classList.remove('active');
+        });
+
         orb.classList.add('active');
 
         const category = orb.dataset.category || 'life';
@@ -349,11 +405,13 @@ function buildStudyJournalText(state, meta, theme, support) {
           questionTwo: ''
         });
 
+        resetStudySession(category);
         applyCategoryTheme();
 
         if (resultTitle) resultTitle.textContent = title;
         if (resultDesc) resultDesc.textContent = desc;
         if (resultOpen) resultOpen.href = href;
+
         resultPanel.style.setProperty('--result-glow', glow);
         resultPanel.classList.add('show');
 
@@ -386,9 +444,15 @@ function buildStudyJournalText(state, meta, theme, support) {
     const meta = getMeta();
 
     setStoredTrail({ category: category });
+    setStudySession({
+      category: category,
+      categoryTitle: meta.title
+    });
+
     applyCategoryTheme();
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Input Node';
+
     title.textContent = 'Start with one honest thing.';
     intro.textContent = meta.desc;
     inputBox.placeholder = meta.sampleInput || 'Type your question, topic, scene, emotion, or Bible passage...';
@@ -401,10 +465,19 @@ function buildStudyJournalText(state, meta, theme, support) {
 
     if (primaryLink) {
       primaryLink.href = 'questions.html?category=' + encodeURIComponent(category);
+
       primaryLink.addEventListener('click', function () {
+        const cleanInput = inputBox.value.trim();
+
         setStoredTrail({
           category: category,
-          input: inputBox.value.trim()
+          input: cleanInput
+        });
+
+        setStudySession({
+          category: category,
+          categoryTitle: meta.title,
+          input: cleanInput
         });
       });
     }
@@ -442,6 +515,7 @@ function buildStudyJournalText(state, meta, theme, support) {
       if (span) span.textContent = 'Select this if it feels closest to the heart of your input.';
 
       choice.href = 'trail.html?category=' + encodeURIComponent(getActiveCategory());
+
       choice.addEventListener('click', function () {
         const first = option;
         const second = questions[1] && questions[1].options[index] ? questions[1].options[index] : '';
@@ -453,11 +527,20 @@ function buildStudyJournalText(state, meta, theme, support) {
           questionTwo: second,
           theme: theme
         });
+
+        setStudySession({
+          category: getActiveCategory(),
+          categoryTitle: meta.title,
+          questionOne: first,
+          questionTwo: second,
+          theme: theme
+        });
       });
     });
 
     pillNodes.forEach(function (pill, index) {
       const label = questions[1] && questions[1].options[index - 1] ? questions[1].options[index - 1] : '';
+
       if (index === 0) {
         pill.textContent = questions[1] ? 'Next: ' + questions[1].title : 'Next discovery layer';
       } else if (label) {
@@ -516,6 +599,24 @@ function buildStudyJournalText(state, meta, theme, support) {
       scriptureConnection: support.scripture,
       studyTitle: support.studyTitle
     });
+
+    setStudySession({
+      category: getActiveCategory(),
+      categoryTitle: meta.title,
+      input: state.input || meta.sampleInput,
+      theme: theme,
+      biblicalParallel: support.parallel,
+      scriptureConnection: support.scripture,
+      truthStatement: support.truth,
+      studyTitle: support.studyTitle,
+      trailMap: {
+        startingPoint: state.input || meta.sampleInput,
+        coreTheme: theme,
+        biblicalParallel: support.parallel,
+        scriptureConnection: support.scripture,
+        truthStatement: support.truth
+      }
+    });
   }
 
   function hydrateStudyPage() {
@@ -570,12 +671,14 @@ function buildStudyJournalText(state, meta, theme, support) {
 
     const inclusioHeading = document.createElement('h3');
     inclusioHeading.textContent = 'Inclusio / Literary Pattern';
+
     const inclusioParagraph = document.createElement('p');
     inclusioParagraph.className = 'muted';
     inclusioParagraph.textContent = 'No clear inclusio identified in this passage. Only include this section when the selected text truly contains a repeated opening and closing frame or another clear literary bracket.';
 
     const truthHeading = document.createElement('h3');
     truthHeading.textContent = 'Truth Statement';
+
     const truthParagraph = document.createElement('p');
     truthParagraph.className = 'muted';
     truthParagraph.textContent = state.truthStatement || support.truth;
@@ -632,222 +735,282 @@ function buildStudyJournalText(state, meta, theme, support) {
     if (shareButton) {
       shareButton.textContent = 'Preview Sharing →';
     }
-    const saveStudyBtn = document.querySelector('[data-save-study-journal]');
-const saveStudyStatus = document.querySelector('[data-study-save-status]');
 
-if (saveStudyBtn) {
-  saveStudyBtn.addEventListener('click', function (event) {
-    event.preventDefault();
-
-    const freshState = getStoredTrail();
-    const freshTheme = ensureTheme(freshState) || theme || 'Truth Trail Theme';
-    const freshSupport = themeSupport(freshTheme, getActiveCategory());
-    const freshMeta = getMeta();
-
-    const entry = normalizeJournalEntry({
-      id: 'study_' + Date.now(),
-      dateKey: todayKey(),
-      createdAt: new Date().toISOString(),
-      source: 'study',
+    setStudySession({
       category: getActiveCategory(),
-      categoryTitle: freshMeta.title,
-      input: freshState.input || freshMeta.sampleInput || '',
-      theme: freshTheme,
-      studyTitle: freshState.studyTitle || freshSupport.studyTitle || 'Saved Study',
-      text: buildStudyJournalText(freshState, freshMeta, freshTheme, freshSupport),
-      truthStatement: freshState.truthStatement || freshSupport.truth,
-      scriptureConnection: freshState.scriptureConnection || freshSupport.scripture,
-      biblicalParallel: freshState.biblicalParallel || freshSupport.parallel
+      categoryTitle: meta.title,
+      input: state.input || meta.sampleInput,
+      theme: theme,
+      biblicalParallel: state.biblicalParallel || support.parallel,
+      scriptureConnection: state.scriptureConnection || support.scripture,
+      truthStatement: state.truthStatement || support.truth,
+      studyTitle: state.studyTitle || support.studyTitle,
+      studyOutput: {
+        title: state.studyTitle || support.studyTitle,
+        mainTheme: theme,
+        keyScriptures: [
+          'Scripture reference required (not generated)',
+          'Only verified NASB, NIV, or GNB passages should appear here.'
+        ],
+        exegesisContext: 'Explain what the chosen passage means in context using clear, age-appropriate language.',
+        scriptureBridges: [
+          'Old Testament connection: add only when a clear related passage is verified.',
+          'New Testament connection: add only when a clear related passage is verified.'
+        ],
+        inclusio: 'No clear inclusio identified in this passage.',
+        truthStatement: state.truthStatement || support.truth,
+        discussionQuestions: [
+          'What part of the starting point felt most real to you?',
+          'How did the core theme become clearer through the trail?',
+          'Where do you see this theme in everyday life?',
+          'What is one response step this truth invites this week?'
+        ],
+        reflectionPrompts: [
+          'Write one honest sentence about what this theme reveals in you.',
+          'Name one truth you need to remember this week.',
+          'What question do you still want Scripture to answer more clearly?'
+        ],
+        prayer: 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.',
+        slideOutline: [
+          'Slide 1: Study title',
+          'Slide 2: Starting point and category',
+          'Slide 3: Core theme',
+          'Slide 4: Scripture connection',
+          'Slide 5: Truth statement',
+          'Slide 6: Discussion questions',
+          'Slide 7: Reflection and prayer'
+        ]
+      }
     });
 
-    saveJournalEntry(entry);
+    const saveStudyBtn = document.querySelector('[data-save-study-journal]');
+    const saveStudyStatus = document.querySelector('[data-study-save-status]');
 
-    if (saveStudyStatus) {
-      saveStudyStatus.textContent = 'Study saved to Journal locally on this device.';
+    if (saveStudyBtn) {
+      saveStudyBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+
+        const freshState = getStoredTrail();
+        const freshTheme = ensureTheme(freshState) || theme || 'Truth Trail Theme';
+        const freshSupport = themeSupport(freshTheme, getActiveCategory());
+        const freshMeta = getMeta();
+
+        const entry = normalizeJournalEntry({
+          id: 'study_' + Date.now(),
+          dateKey: todayKey(),
+          createdAt: new Date().toISOString(),
+          source: 'study',
+          category: getActiveCategory(),
+          categoryTitle: freshMeta.title,
+          input: freshState.input || freshMeta.sampleInput || '',
+          theme: freshTheme,
+          studyTitle: freshState.studyTitle || freshSupport.studyTitle || 'Saved Study',
+          text: buildStudyJournalText(freshState, freshMeta, freshTheme, freshSupport),
+          truthStatement: freshState.truthStatement || freshSupport.truth,
+          scriptureConnection: freshState.scriptureConnection || freshSupport.scripture,
+          biblicalParallel: freshState.biblicalParallel || freshSupport.parallel
+        });
+
+        saveJournalEntry(entry);
+
+        setStudySession({
+          savedJournalId: entry.id
+        });
+
+        if (saveStudyStatus) {
+          saveStudyStatus.textContent = 'Study saved to Journal locally on this device.';
+        }
+
+        saveStudyBtn.textContent = 'Saved to Journal ✓';
+      });
     }
-
-    saveStudyBtn.textContent = 'Saved to Journal ✓';
-  });
-}
   }
 
   function hydrateJournalPage() {
-  const textarea = document.querySelector('[data-journal-input]');
-  const saveBtn = document.querySelector('[data-save-journal]');
-  const list = document.querySelector('[data-journal-list]');
-  const status = document.querySelector('[data-journal-status]');
-  const filterStatus = document.querySelector('[data-journal-filter-status]');
-  const calendarGrid = document.querySelector('[data-calendar-grid]');
-const showAllBtn = document.querySelector('[data-show-all-journal]');
-  const state = getStoredTrail();
-  const category = getActiveCategory();
+    const textarea = document.querySelector('[data-journal-input]');
+    const saveBtn = document.querySelector('[data-save-journal]');
+    const list = document.querySelector('[data-journal-list]');
+    const status = document.querySelector('[data-journal-status]');
+    const filterStatus = document.querySelector('[data-journal-filter-status]');
+    const calendarGrid = document.querySelector('[data-calendar-grid]');
+    const showAllBtn = document.querySelector('[data-show-all-journal]');
+    const state = getStoredTrail();
+    const category = getActiveCategory();
 
-  if (!textarea) return;
+    if (!textarea) return;
 
-  applyCategoryTheme();
+    applyCategoryTheme();
 
-  const existingDraft = state.journalDraft || '';
-  textarea.value = existingDraft;
+    const existingDraft = state.journalDraft || '';
+    textarea.value = existingDraft;
 
-  textarea.addEventListener('input', function () {
-    setStoredTrail({ journalDraft: textarea.value });
-  });
-
+    textarea.addEventListener('input', function () {
+      setStoredTrail({ journalDraft: textarea.value });
+    });
 
     function renderCalendarPills(activeDateKey) {
-  if (!calendarGrid) return;
+      if (!calendarGrid) return;
 
-  const days = buildCalendarWindow();
-  const entries = getJournalEntries().map(normalizeJournalEntry);
+      const days = buildCalendarWindow();
+      const entries = getJournalEntries().map(normalizeJournalEntry);
 
-  calendarGrid.innerHTML = days.map(function (day) {
-    const count = entries.filter(function (entry) {
-      return entry.dateKey === day.dateKey;
-    }).length;
+      calendarGrid.innerHTML = days.map(function (day) {
+        const count = entries.filter(function (entry) {
+          return entry.dateKey === day.dateKey;
+        }).length;
 
-    const activeClass = activeDateKey === day.dateKey ? ' active-day' : '';
-    const todayLabel = day.isToday ? 'Today' : day.label;
-    const countLabel = count ? ' · ' + count : '';
+        const activeClass = activeDateKey === day.dateKey ? ' active-day' : '';
+        const todayLabel = day.isToday ? 'Today' : day.label;
+        const countLabel = count ? ' · ' + count : '';
 
-    return (
-      '<button class="pill' + activeClass + '" type="button" data-calendar-day data-date-key="' + escapeHTML(day.dateKey) + '">' +
-        escapeHTML(todayLabel + countLabel) +
-      '</button>'
-    );
-  }).join('');
+        return (
+          '<button class="pill' + activeClass + '" type="button" data-calendar-day data-date-key="' + escapeHTML(day.dateKey) + '">' +
+            escapeHTML(todayLabel + countLabel) +
+          '</button>'
+        );
+      }).join('');
 
-  calendarGrid.querySelectorAll('[data-calendar-day]').forEach(function (pill) {
-    pill.addEventListener('click', function () {
-      const dateKey = pill.getAttribute('data-date-key') || '';
+      calendarGrid.querySelectorAll('[data-calendar-day]').forEach(function (pill) {
+        pill.addEventListener('click', function () {
+          const dateKey = pill.getAttribute('data-date-key') || '';
 
-      calendarGrid.querySelectorAll('[data-calendar-day]').forEach(function (item) {
-        item.classList.remove('active-day');
+          calendarGrid.querySelectorAll('[data-calendar-day]').forEach(function (item) {
+            item.classList.remove('active-day');
+          });
+
+          pill.classList.add('active-day');
+          renderEntries(dateKey);
+        });
       });
-
-      pill.classList.add('active-day');
-      renderEntries(dateKey);
-    });
-  });
-}
-    
-  function renderEntries(filterDate) {
-    if (!list) return;
-    if (filterStatus) {
-  filterStatus.textContent = filterDate
-    ? 'Showing entries for ' + dateLabel(filterDate) + '.'
-    : 'Showing all saved entries.';
-}
-
-    const entries = getJournalEntries().map(normalizeJournalEntry);
-    const filtered = filterDate
-      ? entries.filter(function (entry) { return entry.dateKey === filterDate; })
-      : entries;
-
-    if (!filtered.length) {
-      list.innerHTML =
-        '<article class="glass-card">' +
-          '<h2>No saved journal for this date yet</h2>' +
-          '<p class="muted">Save a reflection or study and it will appear here.</p>' +
-        '</article>';
-      return;
     }
 
-    list.innerHTML = filtered.map(function (entry) {
-      const sourceLabel = entry.source === 'study' ? 'Saved Study' : 'Journal Reflection';
+    function renderEntries(filterDate) {
+      if (!list) return;
 
-      return (
-        '<article class="glass-card" data-entry-id="' + escapeHTML(entry.id) + '">' +
-          '<div class="pill-row" style="margin-bottom:14px;">' +
-            '<span class="pill">' + escapeHTML(sourceLabel) + '</span>' +
-            '<span class="pill">' + escapeHTML(entry.categoryTitle || 'Life Questions') + '</span>' +
-            '<span class="pill">' + escapeHTML(dateLabel(entry.dateKey)) + '</span>' +
-          '</div>' +
+      if (filterStatus) {
+        filterStatus.textContent = filterDate
+          ? 'Showing entries for ' + dateLabel(filterDate) + '.'
+          : 'Showing all saved entries.';
+      }
 
-          '<h2>' + escapeHTML(entry.studyTitle || 'Saved Reflection') + '</h2>' +
+      const entries = getJournalEntries().map(normalizeJournalEntry);
+      const filtered = filterDate
+        ? entries.filter(function (entry) {
+            return entry.dateKey === filterDate;
+          })
+        : entries;
 
-          '<p class="muted"><strong>Starting Point:</strong> ' + escapeHTML(entry.input || 'None') + '</p>' +
-          '<p class="muted"><strong>Theme:</strong> ' + escapeHTML(entry.theme || 'None') + '</p>' +
-
-          '<div style="white-space:pre-wrap;margin-top:16px;">' + escapeHTML(entry.text || '') + '</div>' +
-
-          '<div class="pill-row" style="margin-top:18px;">' +
-            '<button class="ghost-btn" type="button" data-delete-journal="' + escapeHTML(entry.id) + '">Delete</button>' +
-          '</div>' +
-        '</article>'
-      );
-    }).join('');
-
-    list.querySelectorAll('[data-delete-journal]').forEach(function (button) {
-      button.addEventListener('click', function () {
-        const id = button.getAttribute('data-delete-journal');
-        const nextEntries = getJournalEntries().filter(function (entry) {
-          return normalizeJournalEntry(entry).id !== id;
-        });
-
-        setJournalEntries(nextEntries);
-if (status) status.textContent = 'Entry deleted locally.';
-renderCalendarPills(filterDate || '');
-renderEntries(filterDate);
-      });
-    });
-  }
-
-  if (saveBtn) {
-    saveBtn.addEventListener('click', function (event) {
-      event.preventDefault();
-
-      const text = textarea.value.trim();
-      if (!text) {
-        if (status) status.textContent = 'Write something before saving.';
+      if (!filtered.length) {
+        list.innerHTML =
+          '<article class="glass-card">' +
+            '<h2>No saved journal for this date yet</h2>' +
+            '<p class="muted">Save a reflection or study and it will appear here.</p>' +
+          '</article>';
         return;
       }
 
-      const meta = CATEGORY_META[category] || CATEGORY_META.life;
-      const latestState = getStoredTrail();
+      list.innerHTML = filtered.map(function (entry) {
+        const sourceLabel = entry.source === 'study' ? 'Saved Study' : 'Journal Reflection';
 
-      const entry = normalizeJournalEntry({
-        id: 'journal_' + Date.now(),
-        dateKey: todayKey(),
-        createdAt: new Date().toISOString(),
-        source: 'journal',
-        category: category,
-        categoryTitle: meta.title,
-        input: latestState.input || '',
-        theme: latestState.theme || '',
-        studyTitle: latestState.studyTitle || 'Saved Reflection',
-        text: text,
-        truthStatement: latestState.truthStatement || '',
-        scriptureConnection: latestState.scriptureConnection || 'Scripture reference required (not generated)',
-        biblicalParallel: latestState.biblicalParallel || ''
+        return (
+          '<article class="glass-card" data-entry-id="' + escapeHTML(entry.id) + '">' +
+            '<div class="pill-row" style="margin-bottom:14px;">' +
+              '<span class="pill">' + escapeHTML(sourceLabel) + '</span>' +
+              '<span class="pill">' + escapeHTML(entry.categoryTitle || 'Life Questions') + '</span>' +
+              '<span class="pill">' + escapeHTML(dateLabel(entry.dateKey)) + '</span>' +
+            '</div>' +
+
+            '<h2>' + escapeHTML(entry.studyTitle || 'Saved Reflection') + '</h2>' +
+
+            '<p class="muted"><strong>Starting Point:</strong> ' + escapeHTML(entry.input || 'None') + '</p>' +
+            '<p class="muted"><strong>Theme:</strong> ' + escapeHTML(entry.theme || 'None') + '</p>' +
+
+            '<div style="white-space:pre-wrap;margin-top:16px;">' + escapeHTML(entry.text || '') + '</div>' +
+
+            '<div class="pill-row" style="margin-top:18px;">' +
+              '<button class="ghost-btn" type="button" data-delete-journal="' + escapeHTML(entry.id) + '">Delete</button>' +
+            '</div>' +
+          '</article>'
+        );
+      }).join('');
+
+      list.querySelectorAll('[data-delete-journal]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          const id = button.getAttribute('data-delete-journal');
+
+          const nextEntries = getJournalEntries().filter(function (entry) {
+            return normalizeJournalEntry(entry).id !== id;
+          });
+
+          setJournalEntries(nextEntries);
+
+          if (status) status.textContent = 'Entry deleted locally.';
+
+          renderCalendarPills(filterDate || '');
+          renderEntries(filterDate);
+        });
       });
+    }
 
-      saveJournalEntry(entry);
-      setStoredTrail({ journalDraft: '' });
-      textarea.value = '';
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function (event) {
+        event.preventDefault();
 
-      if (status) status.textContent = 'Journal saved locally on this device.';
-      renderEntries();
-    });
+        const text = textarea.value.trim();
+
+        if (!text) {
+          if (status) status.textContent = 'Write something before saving.';
+          return;
+        }
+
+        const meta = CATEGORY_META[category] || CATEGORY_META.life;
+        const latestState = getStoredTrail();
+
+        const entry = normalizeJournalEntry({
+          id: 'journal_' + Date.now(),
+          dateKey: todayKey(),
+          createdAt: new Date().toISOString(),
+          source: 'journal',
+          category: category,
+          categoryTitle: meta.title,
+          input: latestState.input || '',
+          theme: latestState.theme || '',
+          studyTitle: latestState.studyTitle || 'Saved Reflection',
+          text: text,
+          truthStatement: latestState.truthStatement || '',
+          scriptureConnection: latestState.scriptureConnection || 'Scripture reference required (not generated)',
+          biblicalParallel: latestState.biblicalParallel || ''
+        });
+
+        saveJournalEntry(entry);
+        setStoredTrail({ journalDraft: '' });
+        textarea.value = '';
+
+        if (status) status.textContent = 'Journal saved locally on this device.';
+
+        renderCalendarPills(todayKey());
+        renderEntries(todayKey());
+      });
+    }
+
+    if (showAllBtn) {
+      showAllBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        renderCalendarPills('');
+        renderEntries();
+      });
+    }
+
+    renderCalendarPills(todayKey());
+    renderEntries(todayKey());
   }
-
-   if (showAllBtn) {
-  showAllBtn.addEventListener('click', function (event) {
-    event.preventDefault();
-    renderCalendarPills('');
-    renderEntries();
-  });
-}    
-}
-
-renderCalendarPills(todayKey());
-renderEntries(todayKey());
-    
-}
 
   function addCategoryToEyebrow() {
     const eyebrow = document.querySelector('.eyebrow');
     if (!eyebrow) return;
+
     const meta = getMeta();
+
     if (!eyebrow.textContent.toLowerCase().includes(meta.title.toLowerCase())) {
       eyebrow.textContent = meta.title + ' • ' + eyebrow.textContent;
     }
@@ -864,14 +1027,16 @@ renderEntries(todayKey());
   addCategoryToEyebrow();
 
   window.RootedOS = {
-  CATEGORY_META: CATEGORY_META,
-  getStoredTrail: getStoredTrail,
-  setStoredTrail: setStoredTrail,
-  getActiveCategory: getActiveCategory,
-  getJournalEntries: getJournalEntries,
-  setJournalEntries: setJournalEntries,
-  saveJournalEntry: saveJournalEntry,
-  todayKey: todayKey
-};
-  
+    CATEGORY_META: CATEGORY_META,
+    getStoredTrail: getStoredTrail,
+    setStoredTrail: setStoredTrail,
+    getActiveCategory: getActiveCategory,
+    getJournalEntries: getJournalEntries,
+    setJournalEntries: setJournalEntries,
+    saveJournalEntry: saveJournalEntry,
+    todayKey: todayKey,
+    getStudySession: getStudySession,
+    setStudySession: setStudySession,
+    resetStudySession: resetStudySession
+  };
 })();
