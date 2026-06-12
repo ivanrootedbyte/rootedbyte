@@ -119,7 +119,7 @@ button,input,textarea{font:inherit}
   flex-direction:column;
   gap:34px;
   z-index:5;
-  transform:translateY(180px);
+  transform:translateY(210px);
 }
 
 .activation-pane{
