@@ -130,7 +130,7 @@ button,input,textarea{font:inherit}
   pointer-events:none;
   z-index:4;
   --orbit-x:50%;
-  --orbit-y:58%;
+  --orbit-y:62%;
   --center-size:210px;
   --cat-size:112px;
   --ring-main-x:285px;
