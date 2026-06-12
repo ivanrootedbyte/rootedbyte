@@ -439,7 +439,7 @@ button,input,textarea{font:inherit}
 }
 
 @media(max-width:1440px){
-  .start-pane{transform:translateY(80px);}
+  .start-pane{transform:translateY(0px);}
   .frame:before{background:radial-gradient(circle at 50% 40%,rgba(var(--accent-rgb),.08),transparent 36%);}
   .home-stage{display:block;padding:76px 14px 30px;}
   .activation-pane{
