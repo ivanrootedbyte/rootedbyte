@@ -1,5 +1,6 @@
 (function () {
   const STORAGE_KEY = 'rootedosTrail';
+  const JOURNAL_KEY = 'rootedosJournalEntries';
 
   const CATEGORY_META = {
     word: {
@@ -76,6 +77,30 @@
     const merged = Object.assign({}, getStoredTrail(), nextState);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
     return merged;
+  }
+
+  function getJournalEntries() {
+    return safeParse(localStorage.getItem(JOURNAL_KEY) || '[]', []);
+  }
+
+  function setJournalEntries(entries) {
+    localStorage.setItem(JOURNAL_KEY, JSON.stringify(entries));
+    return entries;
+  }
+
+  function saveJournalEntry(entry) {
+    const entries = getJournalEntries();
+    entries.unshift(entry);
+    setJournalEntries(entries);
+    return entry;
+  }
+
+  function todayKey() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return yyyy + '-' + mm + '-' + dd;
   }
 
   function getQueryCategory() {
@@ -519,6 +544,96 @@
     }
   }
 
+  function hydrateJournalPage() {
+    const textarea = document.querySelector('[data-journal-input]');
+    const saveBtn = document.querySelector('[data-save-journal]');
+    const list = document.querySelector('[data-journal-list]');
+    const status = document.querySelector('[data-journal-status]');
+    const dayPills = document.querySelectorAll('[data-calendar-day]');
+    const state = getStoredTrail();
+    const category = getActiveCategory();
+
+    if (!textarea) return;
+
+    applyCategoryTheme();
+
+    const existingDraft = state.journalDraft || '';
+    textarea.value = existingDraft;
+
+    textarea.addEventListener('input', function () {
+      setStoredTrail({ journalDraft: textarea.value });
+    });
+
+    function renderEntries(filterDate) {
+      if (!list) return;
+
+      const entries = getJournalEntries();
+      const filtered = filterDate
+        ? entries.filter(function (entry) { return entry.dateKey === filterDate; })
+        : entries;
+
+      if (!filtered.length) {
+        list.innerHTML = '<article class="glass-card"><h2>No saved journal yet</h2><p class="muted">Save one reflection and it will appear here.</p></article>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(function (entry) {
+        return (
+          '<article class="glass-card">' +
+            '<h2>' + (entry.studyTitle || 'Saved Reflection') + '</h2>' +
+            '<p class="muted"><strong>Category:</strong> ' + (entry.categoryTitle || 'Life Questions') + '</p>' +
+            '<p class="muted"><strong>Date:</strong> ' + entry.dateKey + '</p>' +
+            '<p class="muted"><strong>Starting Point:</strong> ' + (entry.input || 'None') + '</p>' +
+            '<p class="muted"><strong>Theme:</strong> ' + (entry.theme || 'None') + '</p>' +
+            '<p>' + entry.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>' +
+          '</article>'
+        );
+      }).join('');
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+
+        const text = textarea.value.trim();
+        if (!text) {
+          if (status) status.textContent = 'Write something before saving.';
+          return;
+        }
+
+        const meta = CATEGORY_META[category] || CATEGORY_META.life;
+        const entry = {
+          id: String(Date.now()),
+          dateKey: todayKey(),
+          category: category,
+          categoryTitle: meta.title,
+          input: state.input || '',
+          theme: state.theme || '',
+          studyTitle: state.studyTitle || 'Saved Reflection',
+          text: text
+        };
+
+        saveJournalEntry(entry);
+        setStoredTrail({ journalDraft: '' });
+        textarea.value = '';
+
+        if (status) status.textContent = 'Journal saved locally on this device.';
+        renderEntries();
+      });
+    }
+
+    dayPills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        dayPills.forEach(function (item) { item.classList.remove('active-day'); });
+        pill.classList.add('active-day');
+        const dateKey = pill.getAttribute('data-date-key') || '';
+        renderEntries(dateKey);
+      });
+    });
+
+    renderEntries();
+  }
+
   function addCategoryToEyebrow() {
     const eyebrow = document.querySelector('.eyebrow');
     if (!eyebrow) return;
@@ -535,12 +650,14 @@
   hydrateQuestionPage();
   hydrateTrailPage();
   hydrateStudyPage();
+  hydrateJournalPage();
   addCategoryToEyebrow();
 
   window.RootedOS = {
     CATEGORY_META: CATEGORY_META,
     getStoredTrail: getStoredTrail,
     setStoredTrail: setStoredTrail,
-    getActiveCategory: getActiveCategory
+    getActiveCategory: getActiveCategory,
+    getJournalEntries: getJournalEntries
   };
 })();
