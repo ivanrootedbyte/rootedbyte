@@ -26,7 +26,7 @@
         <section class="page-title">
           <div class="eyebrow">Journal Panel</div>
           <h1>Keep the trail alive.</h1>
-          <p>A quiet place for saving reflection, future-dated entries, and study notes. This remains UI-only until deeper local storage or Supabase is added.</p>
+          <p>A quiet place for saving reflection, future-dated entries, and study notes. Journal saves now work locally on this device.</p>
         </section>
 
         <section class="glass-grid">
@@ -34,31 +34,33 @@
             <h2>Today’s Journal</h2>
             <p class="muted">Capture what surfaced from the trail, the truth statement you want to keep, or the next question you want to explore.</p>
 
-            <textarea class="input-box" placeholder="What truth do you want to remember from this trail?"></textarea>
+            <textarea class="input-box" data-journal-input placeholder="What truth do you want to remember from this trail?"></textarea>
 
             <div class="pill-row">
-              <span class="pill">Save placeholder</span>
               <span class="pill">Attach to trail</span>
               <span class="pill">Private</span>
+              <span class="pill">Saved locally</span>
             </div>
 
+            <p class="muted" data-journal-status style="margin-top:16px;">Nothing saved yet in this session.</p>
+
             <p style="margin-top:18px;">
-              <a class="primary-btn" href="study.html">Return to Study →</a>
+              <a class="primary-btn" href="#" data-save-journal>Save Journal Entry →</a>
             </p>
           </article>
 
           <article class="glass-card">
             <h2>Calendar Preview</h2>
-            <p class="muted">Future: select any date and retrieve saved outputs, reflections, study guides, and connected truth trails.</p>
+            <p class="muted">Click a date pill to filter saved entries. Right now this is a local-device preview.</p>
 
             <div class="badge-grid" style="grid-template-columns:repeat(3,1fr);margin:20px 0 0">
-              <span class="pill">12</span>
-              <span class="pill">13</span>
-              <span class="pill">14</span>
-              <span class="pill">15</span>
-              <span class="pill">16</span>
-              <span class="pill">17</span>
-              <span class="pill">18</span>
+              <span class="pill" data-calendar-day data-date-key="2026-06-12">12</span>
+              <span class="pill" data-calendar-day data-date-key="2026-06-13">13</span>
+              <span class="pill" data-calendar-day data-date-key="2026-06-14">14</span>
+              <span class="pill" data-calendar-day data-date-key="2026-06-15">15</span>
+              <span class="pill" data-calendar-day data-date-key="2026-06-16">16</span>
+              <span class="pill" data-calendar-day data-date-key="2026-06-17">17</span>
+              <span class="pill" data-calendar-day data-date-key="2026-06-18">18</span>
             </div>
 
             <div class="pill-row" style="margin-top:20px;">
@@ -66,6 +68,13 @@
               <span class="pill">Journal linked</span>
               <span class="pill">Future retrieval</span>
             </div>
+          </article>
+        </section>
+
+        <section style="margin-top:22px;" data-journal-list>
+          <article class="glass-card">
+            <h2>No saved journal yet</h2>
+            <p class="muted">Save one reflection and it will appear here.</p>
           </article>
         </section>
       </div>
