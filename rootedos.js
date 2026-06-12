@@ -779,8 +779,9 @@ const showAllBtn = document.querySelector('[data-show-all-journal]');
         });
 
         setJournalEntries(nextEntries);
-        if (status) status.textContent = 'Entry deleted locally.';
-        renderEntries(filterDate);
+if (status) status.textContent = 'Entry deleted locally.';
+renderCalendarPills(filterDate || '');
+renderEntries(filterDate);
       });
     });
   }
@@ -823,11 +824,13 @@ const showAllBtn = document.querySelector('[data-show-all-journal]');
     });
   }
 
-    if (showAllBtn) {
-  showAllBtn.addEventListener('click', function () {
+   if (showAllBtn) {
+  showAllBtn.addEventListener('click', function (event) {
+    event.preventDefault();
     renderCalendarPills('');
     renderEntries();
   });
+}    
 }
 
 renderCalendarPills(todayKey());
