@@ -130,7 +130,8 @@ button,input,textarea{font:inherit}
   pointer-events:none;
   z-index:4;
   --orbit-x:50%;
-  --orbit-y:68%;
+  --orbit-y:52%;
+  --center-y:58%;
   --center-size:210px;
   --cat-size:112px;
   --ring-main-x:285px;
@@ -313,7 +314,7 @@ button,input,textarea{font:inherit}
 .orb-center{
   position:absolute;
   left:var(--orbit-x);
-  top:var(--orbit-y);
+  top:var(--center-y);
   transform:translate(-50%,-50%);
   z-index:8;
   border:0;
@@ -875,7 +876,8 @@ button,input,textarea{font:inherit}
 
   .activation-pane{
     --orbit-x:50%;
-    --orbit-y:52%;
+    --orbit-y:48%;
+    --center-y:54%;
     --center-size:158px;
     --cat-size:86px;
     --ring-main-x:132px;
@@ -968,7 +970,8 @@ button,input,textarea{font:inherit}
 
   .activation-pane{
     --orbit-x:50%;
-    --orbit-y:50%;
+    --orbit-y:47%;
+    --center-y:53%;
     --center-size:138px;
     --cat-size:76px;
     --ring-main-x:104px;
@@ -1021,6 +1024,7 @@ button,input,textarea{font:inherit}
 
 @media(max-width:390px){
   .activation-pane{
+    --center-y:53%;
     --center-size:126px;
     --cat-size:70px;
     --ring-main-x:92px;
