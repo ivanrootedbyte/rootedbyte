@@ -676,6 +676,7 @@ if (saveStudyBtn) {
   const saveBtn = document.querySelector('[data-save-journal]');
   const list = document.querySelector('[data-journal-list]');
   const status = document.querySelector('[data-journal-status]');
+  const filterStatus = document.querySelector('[data-journal-filter-status]');
   const calendarGrid = document.querySelector('[data-calendar-grid]');
 const showAllBtn = document.querySelector('[data-show-all-journal]');
   const state = getStoredTrail();
@@ -731,6 +732,11 @@ const showAllBtn = document.querySelector('[data-show-all-journal]');
     
   function renderEntries(filterDate) {
     if (!list) return;
+    if (filterStatus) {
+  filterStatus.textContent = filterDate
+    ? 'Showing entries for ' + dateLabel(filterDate) + '.'
+    : 'Showing all saved entries.';
+}
 
     const entries = getJournalEntries().map(normalizeJournalEntry);
     const filtered = filterDate
