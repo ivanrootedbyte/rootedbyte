@@ -92,6 +92,10 @@
     return CATEGORY_META[getActiveCategory()] || CATEGORY_META.life;
   }
 
+  function applyCategoryTheme() {
+    document.body.setAttribute('data-category', getActiveCategory());
+  }
+
   function titleCase(text) {
     return (text || '').replace(/\b\w/g, function (char) { return char.toUpperCase(); });
   }
@@ -230,6 +234,8 @@
           questionTwo: ''
         });
 
+        applyCategoryTheme();
+
         if (resultTitle) resultTitle.textContent = title;
         if (resultDesc) resultDesc.textContent = desc;
         if (resultOpen) resultOpen.href = href;
@@ -265,6 +271,7 @@
     const meta = getMeta();
 
     setStoredTrail({ category: category });
+    applyCategoryTheme();
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Input Node';
     title.textContent = 'Start with one honest thing.';
@@ -301,6 +308,8 @@
     const questions = meta.questions || [];
 
     if (!questionHeading || !choiceNodes.length) return;
+
+    applyCategoryTheme();
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
     if (title) title.textContent = 'Tap what rises to the surface.';
@@ -355,6 +364,8 @@
 
     if (!trailItems.length) return;
 
+    applyCategoryTheme();
+
     if (eyebrow) eyebrow.textContent = meta.title + ' • Truth Trail Map';
     if (title) title.textContent = 'A journey, not a reply.';
     if (intro) intro.textContent = 'Your pathway moves from a real starting point toward a core theme, a Biblical parallel, a Scripture connection, and a truth statement.';
@@ -403,6 +414,8 @@
     const support = themeSupport(theme, getActiveCategory());
 
     if (!sections.length) return;
+
+    applyCategoryTheme();
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Study Builder';
     if (pageTitle) pageTitle.textContent = 'Turn discovery into a guide.';
@@ -516,6 +529,7 @@
   }
 
   updateTopbarBrand();
+  applyCategoryTheme();
   bindHomeOrbPanel();
   hydrateInputPage();
   hydrateQuestionPage();
