@@ -1,4 +1,77 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>RootedByte | Journal</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"></head>
-<body><main class="page-shell"><section class="frame"><header class="topbar"><div class="window-dots"><span></span><span></span><span></span></div><a class="brand-mark" href="index.html">RootedByte</a><nav class="top-actions"><a href="study.html">Study</a><a href="community.html">Community</a></nav></header><div class="inner-frame"><section class="page-title"><div class="eyebrow">Notebook Panel</div><h1>Keep the trail alive.</h1><p>A quiet place for saving reflection, future dated entries, and study notes. This is UI-only until local storage or Supabase is added.</p></section><section class="glass-grid"><article class="glass-card"><h2>Today’s Journal</h2><textarea class="input-box" placeholder="What truth do you want to remember from this trail?"></textarea><div class="pill-row"><span class="pill">Save placeholder</span><span class="pill">Attach to trail</span><span class="pill">Private</span></div></article><article class="glass-card"><h2>Calendar Preview</h2><p class="muted">Future: select any date and retrieve saved outputs, reflections, and study guides.</p><div class="badge-grid" style="grid-template-columns:repeat(3,1fr);margin:20px 0 0"><span class="pill">12</span><span class="pill">13</span><span class="pill">14</span><span class="pill">15</span><span class="pill">16</span><span class="pill">17</span><span class="pill">18</span></div></article></section></div></section></main></body></html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RootedOS | Journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-category="life">
+  <main class="page-shell">
+    <section class="frame">
+      <header class="topbar">
+        <div class="window-dots"><span></span><span></span><span></span></div>
+        <a class="brand-mark" href="index.html">RootedOS</a>
+        <nav class="top-actions">
+          <a href="study.html">Study</a>
+          <a href="trail.html">Trail Map</a>
+          <a href="community.html">Community</a>
+        </nav>
+      </header>
+
+      <div class="inner-frame">
+        <section class="page-title">
+          <div class="eyebrow">Journal Panel</div>
+          <h1>Keep the trail alive.</h1>
+          <p>A quiet place for saving reflection, future-dated entries, and study notes. This remains UI-only until deeper local storage or Supabase is added.</p>
+        </section>
+
+        <section class="glass-grid">
+          <article class="glass-card">
+            <h2>Today’s Journal</h2>
+            <p class="muted">Capture what surfaced from the trail, the truth statement you want to keep, or the next question you want to explore.</p>
+
+            <textarea class="input-box" placeholder="What truth do you want to remember from this trail?"></textarea>
+
+            <div class="pill-row">
+              <span class="pill">Save placeholder</span>
+              <span class="pill">Attach to trail</span>
+              <span class="pill">Private</span>
+            </div>
+
+            <p style="margin-top:18px;">
+              <a class="primary-btn" href="study.html">Return to Study →</a>
+            </p>
+          </article>
+
+          <article class="glass-card">
+            <h2>Calendar Preview</h2>
+            <p class="muted">Future: select any date and retrieve saved outputs, reflections, study guides, and connected truth trails.</p>
+
+            <div class="badge-grid" style="grid-template-columns:repeat(3,1fr);margin:20px 0 0">
+              <span class="pill">12</span>
+              <span class="pill">13</span>
+              <span class="pill">14</span>
+              <span class="pill">15</span>
+              <span class="pill">16</span>
+              <span class="pill">17</span>
+              <span class="pill">18</span>
+            </div>
+
+            <div class="pill-row" style="margin-top:20px;">
+              <span class="pill">Study saved</span>
+              <span class="pill">Journal linked</span>
+              <span class="pill">Future retrieval</span>
+            </div>
+          </article>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="rootedos.js"></script>
+</body>
+</html>
