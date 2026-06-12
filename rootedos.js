@@ -1,7 +1,18 @@
 (function () {
   const STORAGE_KEY = 'rootedosTrail';
-  const JOURNAL_KEY = 'rootedosJournalEntries';
-  const SESSION_KEY = 'rootedosStudySession';
+const JOURNAL_KEY = 'rootedosJournalEntries';
+const SESSION_KEY = 'rootedosStudySession';
+
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
+
+/*
+  MVP NOTE:
+  Do not expose a real Gemini API key in production frontend code long-term.
+  For first local/Vercel prototype testing, this can be used temporarily.
+  Later, move Gemini calls into a Supabase Edge Function or Vercel serverless function.
+*/
+const GEMINI_API_KEY = '';
 
   const CATEGORY_META = {
     word: {
@@ -74,6 +85,14 @@
     }
   }
 
+  function hasGeminiKey() {
+  return Boolean(GEMINI_API_KEY && GEMINI_API_KEY.trim());
+}
+
+function getGeminiUrl() {
+  return GEMINI_ENDPOINT + '?key=' + encodeURIComponent(GEMINI_API_KEY);
+}
+  
   function getStoredTrail() {
     return safeParse(localStorage.getItem(STORAGE_KEY) || '{}', {});
   }
