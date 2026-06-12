@@ -100,7 +100,7 @@ button,input,textarea{font:inherit}
 
 @media (max-width: 1440px){
   .start-pane{
-    transform:translateY(90px);
+    transform:translateY(0px);
   }
 }
 
