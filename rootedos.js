@@ -278,7 +278,7 @@
     });
 
     if (primaryLink) {
-      primaryLink.href = 'questions_v2.html?category=' + encodeURIComponent(category);
+      primaryLink.href = 'questions.html?category=' + encodeURIComponent(category);
       primaryLink.addEventListener('click', function () {
         setStoredTrail({
           category: category,
@@ -317,7 +317,7 @@
       if (strong) strong.textContent = option;
       if (span) span.textContent = 'Select this if it feels closest to the heart of your input.';
 
-      choice.href = 'trail_v2.html?category=' + encodeURIComponent(getActiveCategory());
+      choice.href = 'trail.html?category=' + encodeURIComponent(getActiveCategory());
       choice.addEventListener('click', function () {
         const first = option;
         const second = questions[1] && questions[1].options[index] ? questions[1].options[index] : '';
@@ -380,7 +380,7 @@
     });
 
     if (continueButton) {
-      continueButton.href = 'study_v2.html?category=' + encodeURIComponent(getActiveCategory());
+      continueButton.href = 'study.html?category=' + encodeURIComponent(getActiveCategory());
     }
 
     setStoredTrail({
