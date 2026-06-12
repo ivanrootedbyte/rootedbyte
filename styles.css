@@ -308,7 +308,7 @@ button,input,textarea{font:inherit}
 .orb-center{
   position:absolute;
   left:50%;
-  top:calc(var(--orbit-y) + 26px);
+  top:calc(var(--orbit-y) + 16px);
   transform:translate(-50%,-50%);
   width:var(--center-size);
   height:var(--center-size);
