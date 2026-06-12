@@ -103,6 +103,66 @@
     return yyyy + '-' + mm + '-' + dd;
   }
 
+  function dateLabel(dateKey) {
+  if (!dateKey) return 'Undated';
+  const parts = dateKey.split('-');
+  if (parts.length !== 3) return dateKey;
+  return parts[1] + '/' + parts[2] + '/' + parts[0];
+}
+
+function escapeHTML(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function normalizeJournalEntry(entry) {
+  return {
+    id: entry.id || 'journal_' + Date.now(),
+    dateKey: entry.dateKey || todayKey(),
+    createdAt: entry.createdAt || new Date().toISOString(),
+    source: entry.source || 'journal',
+    category: entry.category || getActiveCategory(),
+    categoryTitle: entry.categoryTitle || getMeta().title,
+    input: entry.input || '',
+    theme: entry.theme || '',
+    studyTitle: entry.studyTitle || entry.title || 'Saved Reflection',
+    text: entry.text || entry.content || '',
+    truthStatement: entry.truthStatement || '',
+    scriptureConnection: entry.scriptureConnection || 'Scripture reference required (not generated)',
+    biblicalParallel: entry.biblicalParallel || ''
+  };
+}
+
+function buildStudyJournalText(state, meta, theme, support) {
+  return [
+    'Study saved from RootedOS.',
+    '',
+    'Starting Point:',
+    state.input || meta.sampleInput || 'No starting point saved.',
+    '',
+    'Main Theme:',
+    theme || 'Truth Trail Theme',
+    '',
+    'Biblical Parallel:',
+    state.biblicalParallel || support.parallel || 'Scripture reference required (not generated)',
+    '',
+    'Scripture Connection:',
+    state.scriptureConnection || support.scripture || 'Scripture reference required (not generated)',
+    '',
+    'Truth Statement:',
+    state.truthStatement || support.truth || 'Truth statement not available yet.',
+    '',
+    'Reflection Prompts:',
+    '- What part of this trail felt most real?',
+    '- What truth should I remember this week?',
+    '- What Scripture passage needs to be verified before expanding this study?'
+  ].join('\n');
+}
+  
   function getQueryCategory() {
     const params = new URLSearchParams(window.location.search);
     const category = params.get('category');
@@ -542,97 +602,170 @@
     if (shareButton) {
       shareButton.textContent = 'Preview Sharing →';
     }
+    const saveStudyBtn = document.querySelector('[data-save-study-journal]');
+const saveStudyStatus = document.querySelector('[data-study-save-status]');
+
+if (saveStudyBtn) {
+  saveStudyBtn.addEventListener('click', function (event) {
+    event.preventDefault();
+
+    const freshState = getStoredTrail();
+    const freshTheme = ensureTheme(freshState) || theme || 'Truth Trail Theme';
+    const freshSupport = themeSupport(freshTheme, getActiveCategory());
+    const freshMeta = getMeta();
+
+    const entry = normalizeJournalEntry({
+      id: 'study_' + Date.now(),
+      dateKey: todayKey(),
+      createdAt: new Date().toISOString(),
+      source: 'study',
+      category: getActiveCategory(),
+      categoryTitle: freshMeta.title,
+      input: freshState.input || freshMeta.sampleInput || '',
+      theme: freshTheme,
+      studyTitle: freshState.studyTitle || freshSupport.studyTitle || 'Saved Study',
+      text: buildStudyJournalText(freshState, freshMeta, freshTheme, freshSupport),
+      truthStatement: freshState.truthStatement || freshSupport.truth,
+      scriptureConnection: freshState.scriptureConnection || freshSupport.scripture,
+      biblicalParallel: freshState.biblicalParallel || freshSupport.parallel
+    });
+
+    saveJournalEntry(entry);
+
+    if (saveStudyStatus) {
+      saveStudyStatus.textContent = 'Study saved to Journal locally on this device.';
+    }
+
+    saveStudyBtn.textContent = 'Saved to Journal ✓';
+  });
+}
   }
 
   function hydrateJournalPage() {
-    const textarea = document.querySelector('[data-journal-input]');
-    const saveBtn = document.querySelector('[data-save-journal]');
-    const list = document.querySelector('[data-journal-list]');
-    const status = document.querySelector('[data-journal-status]');
-    const dayPills = document.querySelectorAll('[data-calendar-day]');
-    const state = getStoredTrail();
-    const category = getActiveCategory();
+  const textarea = document.querySelector('[data-journal-input]');
+  const saveBtn = document.querySelector('[data-save-journal]');
+  const list = document.querySelector('[data-journal-list]');
+  const status = document.querySelector('[data-journal-status]');
+  const dayPills = document.querySelectorAll('[data-calendar-day]');
+  const state = getStoredTrail();
+  const category = getActiveCategory();
 
-    if (!textarea) return;
+  if (!textarea) return;
 
-    applyCategoryTheme();
+  applyCategoryTheme();
 
-    const existingDraft = state.journalDraft || '';
-    textarea.value = existingDraft;
+  const existingDraft = state.journalDraft || '';
+  textarea.value = existingDraft;
 
-    textarea.addEventListener('input', function () {
-      setStoredTrail({ journalDraft: textarea.value });
+  textarea.addEventListener('input', function () {
+    setStoredTrail({ journalDraft: textarea.value });
+  });
+
+  function renderEntries(filterDate) {
+    if (!list) return;
+
+    const entries = getJournalEntries().map(normalizeJournalEntry);
+    const filtered = filterDate
+      ? entries.filter(function (entry) { return entry.dateKey === filterDate; })
+      : entries;
+
+    if (!filtered.length) {
+      list.innerHTML =
+        '<article class="glass-card">' +
+          '<h2>No saved journal for this date yet</h2>' +
+          '<p class="muted">Save a reflection or study and it will appear here.</p>' +
+        '</article>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(function (entry) {
+      const sourceLabel = entry.source === 'study' ? 'Saved Study' : 'Journal Reflection';
+
+      return (
+        '<article class="glass-card" data-entry-id="' + escapeHTML(entry.id) + '">' +
+          '<div class="pill-row" style="margin-bottom:14px;">' +
+            '<span class="pill">' + escapeHTML(sourceLabel) + '</span>' +
+            '<span class="pill">' + escapeHTML(entry.categoryTitle || 'Life Questions') + '</span>' +
+            '<span class="pill">' + escapeHTML(dateLabel(entry.dateKey)) + '</span>' +
+          '</div>' +
+
+          '<h2>' + escapeHTML(entry.studyTitle || 'Saved Reflection') + '</h2>' +
+
+          '<p class="muted"><strong>Starting Point:</strong> ' + escapeHTML(entry.input || 'None') + '</p>' +
+          '<p class="muted"><strong>Theme:</strong> ' + escapeHTML(entry.theme || 'None') + '</p>' +
+
+          '<div style="white-space:pre-wrap;margin-top:16px;">' + escapeHTML(entry.text || '') + '</div>' +
+
+          '<div class="pill-row" style="margin-top:18px;">' +
+            '<button class="ghost-btn" type="button" data-delete-journal="' + escapeHTML(entry.id) + '">Delete</button>' +
+          '</div>' +
+        '</article>'
+      );
+    }).join('');
+
+    list.querySelectorAll('[data-delete-journal]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const id = button.getAttribute('data-delete-journal');
+        const nextEntries = getJournalEntries().filter(function (entry) {
+          return normalizeJournalEntry(entry).id !== id;
+        });
+
+        setJournalEntries(nextEntries);
+        if (status) status.textContent = 'Entry deleted locally.';
+        renderEntries(filterDate);
+      });
     });
+  }
 
-    function renderEntries(filterDate) {
-      if (!list) return;
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function (event) {
+      event.preventDefault();
 
-      const entries = getJournalEntries();
-      const filtered = filterDate
-        ? entries.filter(function (entry) { return entry.dateKey === filterDate; })
-        : entries;
-
-      if (!filtered.length) {
-        list.innerHTML = '<article class="glass-card"><h2>No saved journal yet</h2><p class="muted">Save one reflection and it will appear here.</p></article>';
+      const text = textarea.value.trim();
+      if (!text) {
+        if (status) status.textContent = 'Write something before saving.';
         return;
       }
 
-      list.innerHTML = filtered.map(function (entry) {
-        return (
-          '<article class="glass-card">' +
-            '<h2>' + (entry.studyTitle || 'Saved Reflection') + '</h2>' +
-            '<p class="muted"><strong>Category:</strong> ' + (entry.categoryTitle || 'Life Questions') + '</p>' +
-            '<p class="muted"><strong>Date:</strong> ' + entry.dateKey + '</p>' +
-            '<p class="muted"><strong>Starting Point:</strong> ' + (entry.input || 'None') + '</p>' +
-            '<p class="muted"><strong>Theme:</strong> ' + (entry.theme || 'None') + '</p>' +
-            '<p>' + entry.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>' +
-          '</article>'
-        );
-      }).join('');
-    }
+      const meta = CATEGORY_META[category] || CATEGORY_META.life;
+      const latestState = getStoredTrail();
 
-    if (saveBtn) {
-      saveBtn.addEventListener('click', function (event) {
-        event.preventDefault();
-
-        const text = textarea.value.trim();
-        if (!text) {
-          if (status) status.textContent = 'Write something before saving.';
-          return;
-        }
-
-        const meta = CATEGORY_META[category] || CATEGORY_META.life;
-        const entry = {
-          id: String(Date.now()),
-          dateKey: todayKey(),
-          category: category,
-          categoryTitle: meta.title,
-          input: state.input || '',
-          theme: state.theme || '',
-          studyTitle: state.studyTitle || 'Saved Reflection',
-          text: text
-        };
-
-        saveJournalEntry(entry);
-        setStoredTrail({ journalDraft: '' });
-        textarea.value = '';
-
-        if (status) status.textContent = 'Journal saved locally on this device.';
-        renderEntries();
+      const entry = normalizeJournalEntry({
+        id: 'journal_' + Date.now(),
+        dateKey: todayKey(),
+        createdAt: new Date().toISOString(),
+        source: 'journal',
+        category: category,
+        categoryTitle: meta.title,
+        input: latestState.input || '',
+        theme: latestState.theme || '',
+        studyTitle: latestState.studyTitle || 'Saved Reflection',
+        text: text,
+        truthStatement: latestState.truthStatement || '',
+        scriptureConnection: latestState.scriptureConnection || 'Scripture reference required (not generated)',
+        biblicalParallel: latestState.biblicalParallel || ''
       });
-    }
 
-    dayPills.forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        dayPills.forEach(function (item) { item.classList.remove('active-day'); });
-        pill.classList.add('active-day');
-        const dateKey = pill.getAttribute('data-date-key') || '';
-        renderEntries(dateKey);
-      });
+      saveJournalEntry(entry);
+      setStoredTrail({ journalDraft: '' });
+      textarea.value = '';
+
+      if (status) status.textContent = 'Journal saved locally on this device.';
+      renderEntries();
     });
-
-    renderEntries();
   }
+
+  dayPills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      dayPills.forEach(function (item) { item.classList.remove('active-day'); });
+      pill.classList.add('active-day');
+      const dateKey = pill.getAttribute('data-date-key') || '';
+      renderEntries(dateKey);
+    });
+  });
+
+  renderEntries();
+}
 
   function addCategoryToEyebrow() {
     const eyebrow = document.querySelector('.eyebrow');
@@ -654,10 +787,14 @@
   addCategoryToEyebrow();
 
   window.RootedOS = {
-    CATEGORY_META: CATEGORY_META,
-    getStoredTrail: getStoredTrail,
-    setStoredTrail: setStoredTrail,
-    getActiveCategory: getActiveCategory,
-    getJournalEntries: getJournalEntries
-  };
+  CATEGORY_META: CATEGORY_META,
+  getStoredTrail: getStoredTrail,
+  setStoredTrail: setStoredTrail,
+  getActiveCategory: getActiveCategory,
+  getJournalEntries: getJournalEntries,
+  setJournalEntries: setJournalEntries,
+  saveJournalEntry: saveJournalEntry,
+  todayKey: todayKey
+};
+  
 })();
