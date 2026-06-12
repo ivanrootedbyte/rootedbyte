@@ -143,9 +143,14 @@ button,input,textarea{font:inherit}
   --ring-bottom-y:205px;
 }
 
+.orb-toggle:checked ~ .start-pane{
+  display:none;
+}
+
 .orb-toggle:checked ~ .activation-pane{
   display:block;
 }
+
 
 .micro-label{
   font-size:11px;
