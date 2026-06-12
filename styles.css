@@ -132,7 +132,6 @@ button,input,textarea{font:inherit}
   z-index:4;
   --orbit-x:50%;
   --orbit-y:52%;
-  --center-y:58%;
   --center-size:210px;
   --cat-size:112px;
   --ring-main-x:285px;
@@ -308,15 +307,25 @@ button,input,textarea{font:inherit}
 
 .orb-center{
   position:absolute;
-  left:var(--orbit-x);
-  top:var(--center-y);
+  left:50%;
+  top:calc(var(--orbit-y) + 36px);
   transform:translate(-50%,-50%);
-  z-index:8;
+  width:var(--center-size);
+  height:var(--center-size);
+  display:grid;
+  place-items:center;
+  z-index:20;
   border:0;
   background:transparent;
   padding:0;
   cursor:pointer;
   pointer-events:auto;
+}
+
+.orb-center .orb.large{
+  width:var(--center-size);
+  height:var(--center-size);
+  display:block;
 }
 
 .cat-word{
@@ -877,7 +886,6 @@ button,input,textarea{font:inherit}
   .activation-pane{
     --orbit-x:50%;
     --orbit-y:48%;
-    --center-y:54%;
     --center-size:158px;
     --cat-size:86px;
     --ring-main-x:132px;
@@ -1028,7 +1036,6 @@ button,input,textarea{font:inherit}
 
 @media(max-width:390px){
   .activation-pane{
-    --center-y:53%;
     --center-size:126px;
     --cat-size:70px;
     --ring-main-x:92px;
