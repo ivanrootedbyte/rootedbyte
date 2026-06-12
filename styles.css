@@ -130,7 +130,7 @@ button,input,textarea{font:inherit}
   pointer-events:none;
   z-index:4;
   --orbit-x:50%;
-  --orbit-y:52%;
+  --orbit-y:58%;
   --center-size:210px;
   --cat-size:112px;
   --ring-main-x:285px;
@@ -875,7 +875,7 @@ button,input,textarea{font:inherit}
 
   .activation-pane{
     --orbit-x:50%;
-    --orbit-y:48%;
+    --orbit-y:52%;
     --center-size:158px;
     --cat-size:86px;
     --ring-main-x:132px;
@@ -968,7 +968,7 @@ button,input,textarea{font:inherit}
 
   .activation-pane{
     --orbit-x:50%;
-    --orbit-y:47%;
+    --orbit-y:50%;
     --center-size:138px;
     --cat-size:76px;
     --ring-main-x:104px;
