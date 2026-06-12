@@ -103,6 +103,7 @@
     return yyyy + '-' + mm + '-' + dd;
   }
 
+  
   function dateLabel(dateKey) {
   if (!dateKey) return 'Undated';
   const parts = dateKey.split('-');
@@ -110,6 +111,35 @@
   return parts[1] + '/' + parts[2] + '/' + parts[0];
 }
 
+  function addDaysToDateKey(baseDate, amount) {
+  const d = new Date(baseDate);
+  d.setDate(d.getDate() + amount);
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+
+  return yyyy + '-' + mm + '-' + dd;
+}
+
+function buildCalendarWindow() {
+  const today = new Date();
+  const days = [];
+
+  for (let offset = -3; offset <= 3; offset += 1) {
+    const dateKey = addDaysToDateKey(today, offset);
+    const label = offset === 0 ? 'Today' : dateKey.split('-')[2];
+
+    days.push({
+      dateKey: dateKey,
+      label: label,
+      isToday: offset === 0
+    });
+  }
+
+  return days;
+}
+  
 function escapeHTML(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -646,7 +676,8 @@ if (saveStudyBtn) {
   const saveBtn = document.querySelector('[data-save-journal]');
   const list = document.querySelector('[data-journal-list]');
   const status = document.querySelector('[data-journal-status]');
-  const dayPills = document.querySelectorAll('[data-calendar-day]');
+  const calendarGrid = document.querySelector('[data-calendar-grid]');
+const showAllBtn = document.querySelector('[data-show-all-journal]');
   const state = getStoredTrail();
   const category = getActiveCategory();
 
@@ -661,6 +692,43 @@ if (saveStudyBtn) {
     setStoredTrail({ journalDraft: textarea.value });
   });
 
+
+    function renderCalendarPills(activeDateKey) {
+  if (!calendarGrid) return;
+
+  const days = buildCalendarWindow();
+  const entries = getJournalEntries().map(normalizeJournalEntry);
+
+  calendarGrid.innerHTML = days.map(function (day) {
+    const count = entries.filter(function (entry) {
+      return entry.dateKey === day.dateKey;
+    }).length;
+
+    const activeClass = activeDateKey === day.dateKey ? ' active-day' : '';
+    const todayLabel = day.isToday ? 'Today' : day.label;
+    const countLabel = count ? ' · ' + count : '';
+
+    return (
+      '<button class="pill' + activeClass + '" type="button" data-calendar-day data-date-key="' + escapeHTML(day.dateKey) + '">' +
+        escapeHTML(todayLabel + countLabel) +
+      '</button>'
+    );
+  }).join('');
+
+  calendarGrid.querySelectorAll('[data-calendar-day]').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      const dateKey = pill.getAttribute('data-date-key') || '';
+
+      calendarGrid.querySelectorAll('[data-calendar-day]').forEach(function (item) {
+        item.classList.remove('active-day');
+      });
+
+      pill.classList.add('active-day');
+      renderEntries(dateKey);
+    });
+  });
+}
+    
   function renderEntries(filterDate) {
     if (!list) return;
 
@@ -755,16 +823,16 @@ if (saveStudyBtn) {
     });
   }
 
-  dayPills.forEach(function (pill) {
-    pill.addEventListener('click', function () {
-      dayPills.forEach(function (item) { item.classList.remove('active-day'); });
-      pill.classList.add('active-day');
-      const dateKey = pill.getAttribute('data-date-key') || '';
-      renderEntries(dateKey);
-    });
+    if (showAllBtn) {
+  showAllBtn.addEventListener('click', function () {
+    renderCalendarPills('');
+    renderEntries();
   });
+}
 
-  renderEntries();
+renderCalendarPills(todayKey());
+renderEntries(todayKey());
+    
 }
 
   function addCategoryToEyebrow() {
