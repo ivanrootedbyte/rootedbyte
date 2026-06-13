@@ -1161,7 +1161,7 @@ async function callGeminiRootedOS(prompt, options) {
     todayKey: todayKey,
     getStudySession: getStudySession,
     setStudySession: setStudySession,
-    resetStudySession: resetStudySession
+    resetStudySession: resetStudySession,
     hasGeminiKey: hasGeminiKey,
     callGeminiRootedOS: callGeminiRootedOS
   };
