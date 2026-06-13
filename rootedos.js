@@ -578,30 +578,32 @@ async function callGeminiRootedOS(prompt, options) {
     }
   }
 
-  function buildAdaptiveQuestionsPrompt(session, meta) {
+ function buildAdaptiveQuestionsPrompt(session, meta) {
   return [
-    'You are generating guided discovery questions for RootedOS.',
-    '',
+    'You generate guided discovery question sets for RootedOS.',
     'RootedOS is not a chatbot and not a search engine.',
-    'It is a guided discovery experience that helps the user move from a starting point toward a clearer theme.',
+    'It is a guided discovery experience.',
     '',
     'Audience: ages 14 to 33+.',
+    'Tone: simple, warm, reflective, clear.',
     '',
-    'Category:',
-    meta.title,
-    '',
-    'User starting point:',
-    session.input || 'No input provided.',
+    'Category: ' + meta.title,
+    'User starting point: ' + (session.input || 'No input provided.'),
     '',
     'Rules:',
+    '- Return ONLY valid JSON.',
+    '- Do not include markdown fences.',
+    '- Do not include commentary before or after JSON.',
     '- Do not quote Bible verses.',
     '- Do not invent Scripture references.',
-    '- Do not create a Bible study yet.',
-    '- Do not mention Gemini or AI.',
-    '- Keep wording simple, warm, and reflective.',
-    '- Questions should feel like selectable path options, not a chat reply.',
+    '- Do not mention AI or Gemini.',
+    '- Create exactly 3 options.',
+    '- Each option must feel distinct but closely related to the user input.',
+    '- Each option label must be short, 1 to 3 words.',
+    '- Each description must be one sentence, under 16 words.',
+    '- Each theme must be short, 1 to 3 words.',
     '',
-    'Return ONLY valid JSON in this shape:',
+    'Return EXACTLY this schema:',
     '{',
     '  "questionTitle": "string",',
     '  "options": [',
@@ -609,9 +611,7 @@ async function callGeminiRootedOS(prompt, options) {
     '    { "label": "string", "description": "string", "theme": "string" },',
     '    { "label": "string", "description": "string", "theme": "string" }',
     '  ]',
-    '}',
-    '',
-    'The three options should be distinct but related to the user input.'
+    '}'
   ].join('\n');
 }
 
