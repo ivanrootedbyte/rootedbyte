@@ -92,6 +92,111 @@ const GEMINI_API_KEY = '';
 function getGeminiUrl() {
   return GEMINI_ENDPOINT + '?key=' + encodeURIComponent(GEMINI_API_KEY);
 }
+
+  function extractGeminiText(data) {
+  const candidate = data &&
+    data.candidates &&
+    data.candidates[0] &&
+    data.candidates[0].content &&
+    data.candidates[0].content.parts &&
+    data.candidates[0].content.parts[0];
+
+  return candidate && candidate.text ? candidate.text : '';
+}
+
+function parseGeminiJson(text) {
+  if (!text) return null;
+
+  const cleaned = text
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+    } catch (innerError) {
+      return null;
+    }
+  }
+}
+
+async function callGeminiRootedOS(prompt, options) {
+  const settings = options || {};
+
+  if (!hasGeminiKey()) {
+    return {
+      ok: false,
+      reason: 'missing_key',
+      text: '',
+      json: null
+    };
+  }
+
+  try {
+    const response = await fetch(getGeminiUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
+          topP: 0.85,
+          topK: 40,
+          maxOutputTokens: settings.maxOutputTokens || 1200,
+          responseMimeType: settings.json ? 'application/json' : 'text/plain'
+        }
+      })
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        reason: 'http_' + response.status,
+        text: '',
+        json: null
+      };
+    }
+
+    const data = await response.json();
+    const text = extractGeminiText(data);
+    const json = settings.json ? parseGeminiJson(text) : null;
+
+    return {
+      ok: true,
+      reason: '',
+      text: text,
+      json: json
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'network_or_parse_error',
+      text: '',
+      json: null
+    };
+  }
+}
   
   function getStoredTrail() {
     return safeParse(localStorage.getItem(STORAGE_KEY) || '{}', {});
@@ -1057,5 +1162,7 @@ function getGeminiUrl() {
     getStudySession: getStudySession,
     setStudySession: setStudySession,
     resetStudySession: resetStudySession
+    hasGeminiKey: hasGeminiKey,
+    callGeminiRootedOS: callGeminiRootedOS
   };
 })();
