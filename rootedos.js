@@ -621,11 +621,11 @@ async function generateAdaptiveQuestions(meta, fallbackQuestions) {
 
   const result = await callGeminiRootedOS(prompt, {
     json: true,
-    temperature: 0.35,
-    maxOutputTokens: 700
+    temperature: 0.25,
+    maxOutputTokens: 500
   });
 
-  if (!result.ok || !result.json || !result.json.options || result.json.options.length < 3) {
+  if (!result.ok || !result.json) {
     return {
       source: 'fallback',
       questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
@@ -645,6 +645,47 @@ async function generateAdaptiveQuestions(meta, fallbackQuestions) {
     };
   }
 
+  const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
+
+  const cleanedOptions = rawOptions
+    .map(function (option) {
+      return {
+        label: String((option && option.label) || '').trim(),
+        description: String((option && option.description) || '').trim(),
+        theme: String((option && option.theme) || (option && option.label) || '').trim()
+      };
+    })
+    .filter(function (option) {
+      return option.label && option.description && option.theme;
+    })
+    .slice(0, 3);
+
+  if (cleanedOptions.length < 3) {
+    return {
+      source: 'fallback',
+      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+      options: fallbackQuestions[0] && fallbackQuestions[0].options
+        ? fallbackQuestions[0].options.map(function (label) {
+            return {
+              label: label,
+              description: 'Select this if it feels closest to the heart of your input.',
+              theme: label
+            };
+          })
+        : [
+            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+          ]
+    };
+  }
+
+  return {
+    source: 'gemini',
+    questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
+    options: cleanedOptions
+  };
+}
   return {
     source: 'gemini',
     questionTitle: result.json.questionTitle || 'What stands out most from this input?',
