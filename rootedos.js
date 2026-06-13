@@ -3,8 +3,7 @@
 const JOURNAL_KEY = 'rootedosJournalEntries';
 const SESSION_KEY = 'rootedosStudySession';
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
+const ROOTEDOS_GEMINI_ENDPOINT = '/api/gemini';
 
 /*
   MVP NOTE:
@@ -86,11 +85,11 @@ const GEMINI_API_KEY = '';
   }
 
   function hasGeminiKey() {
-  return Boolean(GEMINI_API_KEY && GEMINI_API_KEY.trim());
+  return true;
 }
 
 function getGeminiUrl() {
-  return GEMINI_ENDPOINT + '?key=' + encodeURIComponent(GEMINI_API_KEY);
+  return ROOTEDOS_GEMINI_ENDPOINT;
 }
 
   function extractGeminiText(data) {
