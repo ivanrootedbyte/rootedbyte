@@ -122,52 +122,67 @@
   }
 
   async function callGeminiRootedOS(prompt, options) {
-    const settings = options || {};
+  const settings = options || {};
+
+  try {
+    const response = await fetch(getGeminiUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        json: Boolean(settings.json),
+        temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
+        maxOutputTokens: settings.maxOutputTokens || 1200
+      })
+    });
+
+    let payload = null;
 
     try {
-      const response = await fetch(getGeminiUrl(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          json: Boolean(settings.json),
-          temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
-          maxOutputTokens: settings.maxOutputTokens || 1200
-        })
-      });
+      payload = await response.json();
+    } catch (jsonError) {
+      payload = null;
+    }
 
-      const payload = await response.json();
-
-      if (!response.ok || !payload.ok) {
-        return {
-          ok: false,
-          reason: 'backend_' + response.status,
-          text: '',
-          json: null
-        };
-      }
-
-      const data = payload.data;
-      const text = extractGeminiText(data);
-      const json = settings.json ? parseGeminiJson(text) : null;
-
-      return {
-        ok: true,
-        reason: '',
-        text: text,
-        json: json
-      };
-    } catch (error) {
+    if (response.status === 429) {
       return {
         ok: false,
-        reason: 'network_or_backend_error',
+        reason: 'rate_limited',
         text: '',
         json: null
       };
     }
+
+    if (!response.ok || !payload || !payload.ok) {
+      return {
+        ok: false,
+        reason: 'backend_' + response.status,
+        text: '',
+        json: null
+      };
+    }
+
+    const data = payload.data;
+    const text = extractGeminiText(data);
+    const json = settings.json ? parseGeminiJson(text) : null;
+
+    return {
+      ok: true,
+      reason: '',
+      text: text,
+      json: json
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'network_or_backend_error',
+      text: '',
+      json: null
+    };
   }
+}
 
   function getStoredTrail() {
     return safeParse(localStorage.getItem(STORAGE_KEY) || '{}', {});
@@ -511,91 +526,91 @@
   }
 
   async function generateAdaptiveQuestions(meta, fallbackQuestions) {
-    const session = getStudySession();
-    const prompt = buildAdaptiveQuestionsPrompt(session, meta);
+  const session = getStudySession();
+  const prompt = buildAdaptiveQuestionsPrompt(session, meta);
 
-    const result = await callGeminiRootedOS(prompt, {
-      json: true,
-      temperature: 0.25,
-      maxOutputTokens: 500
-    });
+  const result = await callGeminiRootedOS(prompt, {
+    json: true,
+    temperature: 0.25,
+    maxOutputTokens: 500
+  });
 
-    if (!result.ok || !result.json) {
-      return {
-        source: 'fallback',
-        questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
-        options: fallbackQuestions[0] && fallbackQuestions[0].options
-          ? fallbackQuestions[0].options.map(function (label) {
-              return {
-                label: label,
-                description: 'Select this if it feels closest to the heart of your input.',
-                theme: label
-              };
-            })
-          : [
-              { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-              { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-              { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-            ]
-      };
-    }
-
-    const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
-
-    const cleanedOptions = rawOptions
-      .map(function (option, index) {
-        const fallbackLabel = fallbackQuestions[0] && fallbackQuestions[0].options && fallbackQuestions[0].options[index]
-          ? fallbackQuestions[0].options[index]
-          : 'Theme';
-
-        const rawLabel = String((option && option.label) || '').trim();
-        const rawTheme = String((option && option.theme) || '').trim();
-
-        const safeLabel = isBadAutoLabel(rawLabel)
-          ? (rawTheme && !isBadAutoLabel(rawTheme) ? rawTheme : fallbackLabel)
-          : rawLabel;
-
-        const safeTheme = isBadAutoLabel(rawTheme)
-          ? safeLabel
-          : rawTheme;
-
-        return {
-          label: String(safeLabel || fallbackLabel).trim(),
-          description: String((option && option.description) || '').trim(),
-          theme: String(safeTheme || safeLabel || fallbackLabel).trim()
-        };
-      })
-      .filter(function (option) {
-        return option.label && option.description && option.theme;
-      })
-      .slice(0, 3);
-
-    if (cleanedOptions.length < 3) {
-      return {
-        source: 'fallback',
-        questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
-        options: fallbackQuestions[0] && fallbackQuestions[0].options
-          ? fallbackQuestions[0].options.map(function (label) {
-              return {
-                label: label,
-                description: 'Select this if it feels closest to the heart of your input.',
-                theme: label
-              };
-            })
-          : [
-              { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-              { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-              { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-            ]
-      };
-    }
-
+  if (!result.ok || !result.json) {
     return {
-      source: 'gemini',
-      questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
-      options: cleanedOptions
+      source: result.reason === 'rate_limited' ? 'rate_limited' : 'fallback',
+      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+      options: fallbackQuestions[0] && fallbackQuestions[0].options
+        ? fallbackQuestions[0].options.map(function (label) {
+            return {
+              label: label,
+              description: 'Select this if it feels closest to the heart of your input.',
+              theme: label
+            };
+          })
+        : [
+            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+          ]
     };
   }
+
+  const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
+
+  const cleanedOptions = rawOptions
+    .map(function (option, index) {
+      const fallbackLabel = fallbackQuestions[0] && fallbackQuestions[0].options && fallbackQuestions[0].options[index]
+        ? fallbackQuestions[0].options[index]
+        : 'Theme';
+
+      const rawLabel = String((option && option.label) || '').trim();
+      const rawTheme = String((option && option.theme) || '').trim();
+
+      const safeLabel = isBadAutoLabel(rawLabel)
+        ? (rawTheme && !isBadAutoLabel(rawTheme) ? rawTheme : fallbackLabel)
+        : rawLabel;
+
+      const safeTheme = isBadAutoLabel(rawTheme)
+        ? safeLabel
+        : rawTheme;
+
+      return {
+        label: String(safeLabel || fallbackLabel).trim(),
+        description: String((option && option.description) || '').trim(),
+        theme: String(safeTheme || safeLabel || fallbackLabel).trim()
+      };
+    })
+    .filter(function (option) {
+      return option.label && option.description && option.theme;
+    })
+    .slice(0, 3);
+
+  if (cleanedOptions.length < 3) {
+    return {
+      source: 'fallback',
+      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+      options: fallbackQuestions[0] && fallbackQuestions[0].options
+        ? fallbackQuestions[0].options.map(function (label) {
+            return {
+              label: label,
+              description: 'Select this if it feels closest to the heart of your input.',
+              theme: label
+            };
+          })
+        : [
+            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+          ]
+    };
+  }
+
+  return {
+    source: 'gemini',
+    questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
+    options: cleanedOptions
+  };
+}
 
   function bindHomeOrbPanel() {
     const categoryOrbs = document.querySelectorAll('.category-orb');
