@@ -625,6 +625,8 @@ async function generateAdaptiveQuestions(meta, fallbackQuestions) {
     maxOutputTokens: 500
   });
 
+  console.log('Adaptive Gemini result:', result);
+
   if (!result.ok || !result.json) {
     return {
       source: 'fallback',
@@ -644,6 +646,50 @@ async function generateAdaptiveQuestions(meta, fallbackQuestions) {
           ]
     };
   }
+
+  const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
+
+  const cleanedOptions = rawOptions
+    .map(function (option) {
+      return {
+        label: String((option && option.label) || '').trim(),
+        description: String((option && option.description) || '').trim(),
+        theme: String((option && option.theme) || (option && option.label) || '').trim()
+      };
+    })
+    .filter(function (option) {
+      return option.label && option.description && option.theme;
+    })
+    .slice(0, 3);
+
+  console.log('Adaptive cleaned options:', cleanedOptions);
+
+  if (cleanedOptions.length < 3) {
+    return {
+      source: 'fallback',
+      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+      options: fallbackQuestions[0] && fallbackQuestions[0].options
+        ? fallbackQuestions[0].options.map(function (label) {
+            return {
+              label: label,
+              description: 'Select this if it feels closest to the heart of your input.',
+              theme: label
+            };
+          })
+        : [
+            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+          ]
+    };
+  }
+
+  return {
+    source: 'gemini',
+    questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
+    options: cleanedOptions
+  };
+}
 
   const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
 
@@ -715,7 +761,9 @@ async function generateAdaptiveQuestions(meta, fallbackQuestions) {
   questionHeading.textContent = questions[0] ? questions[0].title : 'What stands out most from this input?';
 
   function applyQuestionSet(questionSet) {
-    questionHeading.textContent = questionSet.questionTitle;
+    questionHeading.textContent = questions[0]
+  ? questions[0].title
+  : 'What stands out most from this input?';
 
     if (tag) {
       tag.textContent = questionSet.source === 'gemini'
