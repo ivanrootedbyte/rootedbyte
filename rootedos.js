@@ -132,15 +132,6 @@ function parseGeminiJson(text) {
 async function callGeminiRootedOS(prompt, options) {
   const settings = options || {};
 
-  if (!hasGeminiKey()) {
-    return {
-      ok: false,
-      reason: 'missing_key',
-      text: '',
-      json: null
-    };
-  }
-
   try {
     const response = await fetch(getGeminiUrl(), {
       method: 'POST',
@@ -148,36 +139,25 @@ async function callGeminiRootedOS(prompt, options) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: prompt
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
-          topP: 0.85,
-          topK: 40,
-          maxOutputTokens: settings.maxOutputTokens || 1200,
-          responseMimeType: settings.json ? 'application/json' : 'text/plain'
-        }
+        prompt: prompt,
+        json: Boolean(settings.json),
+        temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
+        maxOutputTokens: settings.maxOutputTokens || 1200
       })
     });
 
-    if (!response.ok) {
+    const payload = await response.json();
+
+    if (!response.ok || !payload.ok) {
       return {
         ok: false,
-        reason: 'http_' + response.status,
+        reason: 'backend_' + response.status,
         text: '',
         json: null
       };
     }
 
-    const data = await response.json();
+    const data = payload.data;
     const text = extractGeminiText(data);
     const json = settings.json ? parseGeminiJson(text) : null;
 
@@ -190,7 +170,7 @@ async function callGeminiRootedOS(prompt, options) {
   } catch (error) {
     return {
       ok: false,
-      reason: 'network_or_parse_error',
+      reason: 'network_or_backend_error',
       text: '',
       json: null
     };
