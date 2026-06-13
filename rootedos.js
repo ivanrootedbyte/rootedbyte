@@ -607,71 +607,188 @@ async function callGeminiRootedOS(prompt, options) {
     }
   }
 
+  function buildAdaptiveQuestionsPrompt(session, meta) {
+  return [
+    'You are generating guided discovery questions for RootedOS.',
+    '',
+    'RootedOS is not a chatbot and not a search engine.',
+    'It is a guided discovery experience that helps the user move from a starting point toward a clearer theme.',
+    '',
+    'Audience: ages 14 to 33+.',
+    '',
+    'Category:',
+    meta.title,
+    '',
+    'User starting point:',
+    session.input || 'No input provided.',
+    '',
+    'Rules:',
+    '- Do not quote Bible verses.',
+    '- Do not invent Scripture references.',
+    '- Do not create a Bible study yet.',
+    '- Do not mention Gemini or AI.',
+    '- Keep wording simple, warm, and reflective.',
+    '- Questions should feel like selectable path options, not a chat reply.',
+    '',
+    'Return ONLY valid JSON in this shape:',
+    '{',
+    '  "questionTitle": "string",',
+    '  "options": [',
+    '    { "label": "string", "description": "string", "theme": "string" },',
+    '    { "label": "string", "description": "string", "theme": "string" },',
+    '    { "label": "string", "description": "string", "theme": "string" }',
+    '  ]',
+    '}',
+    '',
+    'The three options should be distinct but related to the user input.'
+  ].join('\n');
+}
+
+async function generateAdaptiveQuestions(meta, fallbackQuestions) {
+  const session = getStudySession();
+  const prompt = buildAdaptiveQuestionsPrompt(session, meta);
+
+  const result = await callGeminiRootedOS(prompt, {
+    json: true,
+    temperature: 0.35,
+    maxOutputTokens: 700
+  });
+
+  if (!result.ok || !result.json || !result.json.options || result.json.options.length < 3) {
+    return {
+      source: 'fallback',
+      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+      options: fallbackQuestions[0] && fallbackQuestions[0].options
+        ? fallbackQuestions[0].options.map(function (label) {
+            return {
+              label: label,
+              description: 'Select this if it feels closest to the heart of your input.',
+              theme: label
+            };
+          })
+        : [
+            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+          ]
+    };
+  }
+
+  return {
+    source: 'gemini',
+    questionTitle: result.json.questionTitle || 'What stands out most from this input?',
+    options: result.json.options.slice(0, 3).map(function (option) {
+      return {
+        label: option.label || 'Theme',
+        description: option.description || 'Select this if it feels closest to the heart of your input.',
+        theme: option.theme || option.label || 'Truth Trail Theme'
+      };
+    })
+  };
+}
+  
   function hydrateQuestionPage() {
-    const eyebrow = document.querySelector('.eyebrow');
-    const title = document.querySelector('.page-title h1');
-    const intro = document.querySelector('.page-title p');
-    const tag = document.querySelector('.question-card .scripture-tag');
-    const questionHeading = document.querySelector('.question-card h2');
-    const choiceNodes = document.querySelectorAll('.choice');
-    const pillNodes = document.querySelectorAll('.question-card .pill-row .pill');
-    const state = getStoredTrail();
-    const meta = getMeta();
-    const questions = meta.questions || [];
+  const eyebrow = document.querySelector('.eyebrow');
+  const title = document.querySelector('.page-title h1');
+  const intro = document.querySelector('.page-title p');
+  const tag = document.querySelector('.question-card .scripture-tag');
+  const questionHeading = document.querySelector('.question-card h2');
+  const choiceNodes = document.querySelectorAll('.choice');
+  const pillNodes = document.querySelectorAll('.question-card .pill-row .pill');
+  const state = getStoredTrail();
+  const meta = getMeta();
+  const questions = meta.questions || [];
 
-    if (!questionHeading || !choiceNodes.length) return;
+  if (!questionHeading || !choiceNodes.length) return;
 
-    applyCategoryTheme();
+  applyCategoryTheme();
 
-    if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
-    if (title) title.textContent = 'Tap what rises to the surface.';
-    if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
-    if (tag) tag.textContent = 'Discovery Node • ' + meta.title;
+  if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
+  if (title) title.textContent = 'Tap what rises to the surface.';
+  if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
+  if (tag) {
+    tag.textContent = hasGeminiKey()
+      ? 'Discovery Node • Preparing adaptive paths'
+      : 'Discovery Node • Local fallback paths';
+  }
 
-    questionHeading.textContent = questions[0] ? questions[0].title : 'What stands out most from this input?';
+  questionHeading.textContent = questions[0] ? questions[0].title : 'What stands out most from this input?';
+
+  function applyQuestionSet(questionSet) {
+    questionHeading.textContent = questionSet.questionTitle;
+
+    if (tag) {
+      tag.textContent = questionSet.source === 'gemini'
+        ? 'Discovery Node • Adaptive paths'
+        : 'Discovery Node • Local fallback paths';
+    }
 
     choiceNodes.forEach(function (choice, index) {
       const strong = choice.querySelector('strong');
       const span = choice.querySelector('span');
-      const option = questions[0] && questions[0].options[index] ? questions[0].options[index] : 'Theme ' + (index + 1);
+      const option = questionSet.options[index] || questionSet.options[0];
 
-      if (strong) strong.textContent = option;
-      if (span) span.textContent = 'Select this if it feels closest to the heart of your input.';
+      if (strong) strong.textContent = option.label;
+      if (span) span.textContent = option.description;
 
       choice.href = 'trail.html?category=' + encodeURIComponent(getActiveCategory());
 
       choice.addEventListener('click', function () {
-        const first = option;
-        const second = questions[1] && questions[1].options[index] ? questions[1].options[index] : '';
-        const theme = second || first || ensureTheme(state) || 'Truth Trail Theme';
-
         setStoredTrail({
           category: getActiveCategory(),
-          questionOne: first,
-          questionTwo: second,
-          theme: theme
+          questionOne: option.label,
+          questionTwo: '',
+          theme: option.theme || option.label
         });
 
         setStudySession({
           category: getActiveCategory(),
           categoryTitle: meta.title,
-          questionOne: first,
-          questionTwo: second,
-          theme: theme
+          questionOne: option.label,
+          questionTwo: '',
+          theme: option.theme || option.label,
+          adaptiveQuestionSource: questionSet.source
         });
       });
     });
 
     pillNodes.forEach(function (pill, index) {
-      const label = questions[1] && questions[1].options[index - 1] ? questions[1].options[index - 1] : '';
-
       if (index === 0) {
-        pill.textContent = questions[1] ? 'Next: ' + questions[1].title : 'Next discovery layer';
-      } else if (label) {
-        pill.textContent = label;
+        pill.textContent = questionSet.source === 'gemini'
+          ? 'Adaptive question layer'
+          : 'Local question layer';
+      } else if (questionSet.options[index - 1]) {
+        pill.textContent = questionSet.options[index - 1].theme || questionSet.options[index - 1].label;
       }
     });
   }
+
+  const fallbackSet = {
+    source: 'fallback',
+    questionTitle: questions[0] ? questions[0].title : 'What stands out most from this input?',
+    options: questions[0] && questions[0].options
+      ? questions[0].options.map(function (label) {
+          return {
+            label: label,
+            description: 'Select this if it feels closest to the heart of your input.',
+            theme: label
+          };
+        })
+      : [
+          { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+          { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+          { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+        ]
+  };
+
+  applyQuestionSet(fallbackSet);
+
+  if (!hasGeminiKey()) return;
+
+  generateAdaptiveQuestions(meta, questions).then(function (questionSet) {
+    applyQuestionSet(questionSet);
+  });
+}
 
   function hydrateTrailPage() {
     const eyebrow = document.querySelector('.eyebrow');
