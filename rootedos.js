@@ -835,33 +835,90 @@
     });
   }
 
+  function buildTrailPrompt(session, meta) {
+  return [
+    'You generate a guided truth trail for RootedOS.',
+    'RootedOS is not a chatbot and not a search engine.',
+    'It is a guided discovery experience moving from a real user starting point toward a clear truth trail.',
+    '',
+    'Audience: ages 14 to 33+.',
+    'Tone: clear, grounded, reflective, simple, warm.',
+    '',
+    'Category: ' + meta.title,
+    'User starting point: ' + (session.input || 'No input provided.'),
+    'Selected question path: ' + (session.questionOne || 'None selected.'),
+    'Theme if present: ' + (session.theme || 'None yet.'),
+    '',
+    'Rules:',
+    '- Return ONLY valid JSON.',
+    '- Do not include markdown fences.',
+    '- Do not include commentary before or after JSON.',
+    '- Do not invent Bible verses.',
+    '- Do not invent Scripture references.',
+    '- If exact Scripture is not verified, use the exact text: "Scripture reference required (not generated)".',
+    '- Biblical parallel must be concept-level, not a fake citation.',
+    '- Truth statement should be clear, concise, and meaningful.',
+    '- Study title should sound usable for a real study session.',
+    '',
+    'Return EXACTLY this schema:',
+    '{',
+    '  "startingPoint": "string",',
+    '  "coreTheme": "string",',
+    '  "biblicalParallel": "string",',
+    '  "scriptureConnection": "Scripture reference required (not generated)",',
+    '  "truthStatement": "string",',
+    '  "studyTitle": "string"',
+    '}'
+  ].join('\n');
+}
+
+async function generateTrailMap(meta) {
+  const session = getStudySession();
+  const prompt = buildTrailPrompt(session, meta);
+
+  const result = await callGeminiRootedOS(prompt, {
+    json: true,
+    temperature: 0.3,
+    maxOutputTokens: 700
+  });
+
+  if (!result.ok || !result.json) {
+    return null;
+  }
+
+  return {
+    startingPoint: String(result.json.startingPoint || session.input || meta.sampleInput || '').trim(),
+    coreTheme: String(result.json.coreTheme || session.theme || 'Truth Trail Theme').trim(),
+    biblicalParallel: String(result.json.biblicalParallel || '').trim(),
+    scriptureConnection: result.json.scriptureConnection === 'Scripture reference required (not generated)'
+      ? 'Scripture reference required (not generated)'
+      : 'Scripture reference required (not generated)',
+    truthStatement: String(result.json.truthStatement || '').trim(),
+    studyTitle: String(result.json.studyTitle || '').trim()
+  };
+}
+    
+
   function hydrateTrailPage() {
-    const eyebrow = document.querySelector('.eyebrow');
-    const title = document.querySelector('.page-title h1');
-    const intro = document.querySelector('.page-title p');
-    const trailItems = document.querySelectorAll('.trail-content');
-    const continueButton = document.querySelector('.primary-btn');
-    const state = getStoredTrail();
-    const meta = getMeta();
-    const theme = ensureTheme(state) || 'Truth Trail Theme';
-    const support = themeSupport(theme, getActiveCategory());
+  const eyebrow = document.querySelector('.eyebrow');
+  const title = document.querySelector('.page-title h1');
+  const intro = document.querySelector('.page-title p');
+  const trailItems = document.querySelectorAll('.trail-content');
+  const continueButton = document.querySelector('.primary-btn');
+  const state = getStoredTrail();
+  const meta = getMeta();
+  const theme = ensureTheme(state) || 'Truth Trail Theme';
+  const support = themeSupport(theme, getActiveCategory());
 
-    if (!trailItems.length) return;
+  if (!trailItems.length) return;
 
-    applyCategoryTheme();
+  applyCategoryTheme();
 
-    if (eyebrow) eyebrow.textContent = meta.title + ' • Truth Trail Map';
-    if (title) title.textContent = 'A journey, not a reply.';
-    if (intro) intro.textContent = 'Your pathway moves from a real starting point toward a core theme, a Biblical parallel, a Scripture connection, and a truth statement.';
+  if (eyebrow) eyebrow.textContent = meta.title + ' • Truth Trail Map';
+  if (title) title.textContent = 'A journey, not a reply.';
+  if (intro) intro.textContent = 'Your pathway moves from a real starting point toward a core theme, a Biblical parallel, a Scripture connection, and a truth statement.';
 
-    const labels = [
-      { title: 'Starting Point', text: state.input || meta.sampleInput },
-      { title: 'Core Theme', text: theme },
-      { title: 'Biblical Parallel', text: support.parallel },
-      { title: 'Scripture Connection', text: support.scripture, tag: 'NASB / NIV / GNB only' },
-      { title: 'Truth Statement', text: support.truth }
-    ];
-
+  function renderTrail(labels) {
     trailItems.forEach(function (item, index) {
       const strong = item.querySelector('strong');
       const muted = item.querySelector('.muted');
@@ -870,41 +927,98 @@
       if (labels[index]) {
         if (strong) strong.textContent = labels[index].title;
         if (muted) muted.textContent = labels[index].text;
-        if (tag && labels[index].tag) tag.textContent = labels[index].tag;
+        if (tag) {
+          if (labels[index].tag) {
+            tag.textContent = labels[index].tag;
+          } else {
+            tag.textContent = '';
+          }
+        }
       }
     });
+  }
 
-    if (continueButton) {
-      continueButton.href = 'study.html?category=' + encodeURIComponent(getActiveCategory());
+  const fallbackLabels = [
+    { title: 'Starting Point', text: state.input || meta.sampleInput },
+    { title: 'Core Theme', text: theme },
+    { title: 'Biblical Parallel', text: support.parallel },
+    { title: 'Scripture Connection', text: 'Scripture reference required (not generated)', tag: 'NASB / NIV / GNB only' },
+    { title: 'Truth Statement', text: support.truth }
+  ];
+
+  renderTrail(fallbackLabels);
+
+  if (continueButton) {
+    continueButton.href = 'study.html?category=' + encodeURIComponent(getActiveCategory());
+  }
+
+  setStoredTrail({
+    theme: theme,
+    truthStatement: support.truth,
+    biblicalParallel: support.parallel,
+    scriptureConnection: 'Scripture reference required (not generated)',
+    studyTitle: support.studyTitle
+  });
+
+  setStudySession({
+    category: getActiveCategory(),
+    categoryTitle: meta.title,
+    input: state.input || meta.sampleInput,
+    theme: theme,
+    biblicalParallel: support.parallel,
+    scriptureConnection: 'Scripture reference required (not generated)',
+    truthStatement: support.truth,
+    studyTitle: support.studyTitle,
+    trailMap: {
+      startingPoint: state.input || meta.sampleInput,
+      coreTheme: theme,
+      biblicalParallel: support.parallel,
+      scriptureConnection: 'Scripture reference required (not generated)',
+      truthStatement: support.truth
     }
+  });
+
+  generateTrailMap(meta).then(function (generated) {
+    if (!generated) return;
+
+    const actualLabels = [
+      { title: 'Starting Point', text: generated.startingPoint || state.input || meta.sampleInput },
+      { title: 'Core Theme', text: generated.coreTheme || theme },
+      { title: 'Biblical Parallel', text: generated.biblicalParallel || support.parallel },
+      { title: 'Scripture Connection', text: 'Scripture reference required (not generated)', tag: 'NASB / NIV / GNB only' },
+      { title: 'Truth Statement', text: generated.truthStatement || support.truth }
+    ];
+
+    renderTrail(actualLabels);
 
     setStoredTrail({
-      theme: theme,
-      truthStatement: support.truth,
-      biblicalParallel: support.parallel,
-      scriptureConnection: support.scripture,
-      studyTitle: support.studyTitle
+      theme: generated.coreTheme || theme,
+      truthStatement: generated.truthStatement || support.truth,
+      biblicalParallel: generated.biblicalParallel || support.parallel,
+      scriptureConnection: 'Scripture reference required (not generated)',
+      studyTitle: generated.studyTitle || support.studyTitle
     });
 
     setStudySession({
       category: getActiveCategory(),
       categoryTitle: meta.title,
       input: state.input || meta.sampleInput,
-      theme: theme,
-      biblicalParallel: support.parallel,
-      scriptureConnection: support.scripture,
-      truthStatement: support.truth,
-      studyTitle: support.studyTitle,
+      theme: generated.coreTheme || theme,
+      biblicalParallel: generated.biblicalParallel || support.parallel,
+      scriptureConnection: 'Scripture reference required (not generated)',
+      truthStatement: generated.truthStatement || support.truth,
+      studyTitle: generated.studyTitle || support.studyTitle,
       trailMap: {
-        startingPoint: state.input || meta.sampleInput,
-        coreTheme: theme,
-        biblicalParallel: support.parallel,
-        scriptureConnection: support.scripture,
-        truthStatement: support.truth
+        startingPoint: generated.startingPoint || state.input || meta.sampleInput,
+        coreTheme: generated.coreTheme || theme,
+        biblicalParallel: generated.biblicalParallel || support.parallel,
+        scriptureConnection: 'Scripture reference required (not generated)',
+        truthStatement: generated.truthStatement || support.truth
       }
     });
-  }
-
+  });
+}
+  
   function hydrateStudyPage() {
     const eyebrow = document.querySelector('.eyebrow');
     const pageTitle = document.querySelector('.page-title h1');
