@@ -77,98 +77,98 @@
   }
 
   function hasGeminiKey() {
-  return true;
-}
+    return true;
+  }
 
-function getGeminiUrl() {
-  return ROOTEDOS_GEMINI_ENDPOINT;
-}
+  function getGeminiUrl() {
+    return ROOTEDOS_GEMINI_ENDPOINT;
+  }
 
   function extractGeminiText(data) {
-  const candidate = data &&
-    data.candidates &&
-    data.candidates[0] &&
-    data.candidates[0].content &&
-    data.candidates[0].content.parts &&
-    data.candidates[0].content.parts[0];
+    const candidate = data &&
+      data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts &&
+      data.candidates[0].content.parts[0];
 
-  return candidate && candidate.text ? candidate.text : '';
-}
+    return candidate && candidate.text ? candidate.text : '';
+  }
 
-function parseGeminiJson(text) {
-  if (!text) return null;
+  function parseGeminiJson(text) {
+    if (!text) return null;
 
-  const cleaned = text
-    .replace(/```json/g, '')
-    .replace(/```/g, '')
-    .trim();
-
-  try {
-    return JSON.parse(cleaned);
-  } catch (error) {
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-
-    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-      return null;
-    }
+    const cleaned = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
 
     try {
-      return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
-    } catch (innerError) {
-      return null;
+      return JSON.parse(cleaned);
+    } catch (error) {
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+
+      if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+      } catch (innerError) {
+        return null;
+      }
     }
   }
-}
 
-async function callGeminiRootedOS(prompt, options) {
-  const settings = options || {};
+  async function callGeminiRootedOS(prompt, options) {
+    const settings = options || {};
 
-  try {
-    const response = await fetch(getGeminiUrl(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        json: Boolean(settings.json),
-        temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
-        maxOutputTokens: settings.maxOutputTokens || 1200
-      })
-    });
+    try {
+      const response = await fetch(getGeminiUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          json: Boolean(settings.json),
+          temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
+          maxOutputTokens: settings.maxOutputTokens || 1200
+        })
+      });
 
-    const payload = await response.json();
+      const payload = await response.json();
 
-    if (!response.ok || !payload.ok) {
+      if (!response.ok || !payload.ok) {
+        return {
+          ok: false,
+          reason: 'backend_' + response.status,
+          text: '',
+          json: null
+        };
+      }
+
+      const data = payload.data;
+      const text = extractGeminiText(data);
+      const json = settings.json ? parseGeminiJson(text) : null;
+
+      return {
+        ok: true,
+        reason: '',
+        text: text,
+        json: json
+      };
+    } catch (error) {
       return {
         ok: false,
-        reason: 'backend_' + response.status,
+        reason: 'network_or_backend_error',
         text: '',
         json: null
       };
     }
-
-    const data = payload.data;
-    const text = extractGeminiText(data);
-    const json = settings.json ? parseGeminiJson(text) : null;
-
-    return {
-      ok: true,
-      reason: '',
-      text: text,
-      json: json
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      reason: 'network_or_backend_error',
-      text: '',
-      json: null
-    };
   }
-}
-  
+
   function getStoredTrail() {
     return safeParse(localStorage.getItem(STORAGE_KEY) || '{}', {});
   }
@@ -462,6 +462,141 @@ async function callGeminiRootedOS(prompt, options) {
     });
   }
 
+  function isBadAutoLabel(value) {
+    const text = String(value || '').trim();
+    if (!text) return true;
+    if (/^node\s*0*\d+$/i.test(text)) return true;
+    if (/^node\s+\d+/i.test(text)) return true;
+    if (/^option\s*0*\d+$/i.test(text)) return true;
+    if (/^step\s*0*\d+$/i.test(text)) return true;
+    return false;
+  }
+
+  function buildAdaptiveQuestionsPrompt(session, meta) {
+    return [
+      'You generate guided discovery question sets for RootedOS.',
+      'RootedOS is not a chatbot and not a search engine.',
+      'It is a guided discovery experience.',
+      '',
+      'Audience: ages 14 to 33+.',
+      'Tone: simple, warm, reflective, clear.',
+      '',
+      'Category: ' + meta.title,
+      'User starting point: ' + (session.input || 'No input provided.'),
+      '',
+      'Rules:',
+      '- Return ONLY valid JSON.',
+      '- Do not include markdown fences.',
+      '- Do not include commentary before or after JSON.',
+      '- Do not quote Bible verses.',
+      '- Do not invent Scripture references.',
+      '- Do not mention AI or Gemini.',
+      '- Do not use labels like Node 01, Step 1, Option 1, Path 1.',
+      '- Create exactly 3 options.',
+      '- Each option must feel distinct but closely related to the user input.',
+      '- Each option label must be short, 1 to 3 words.',
+      '- Each description must be one sentence, under 16 words.',
+      '- Each theme must be short, 1 to 3 words.',
+      '',
+      'Return EXACTLY this schema:',
+      '{',
+      '  "questionTitle": "string",',
+      '  "options": [',
+      '    { "label": "string", "description": "string", "theme": "string" },',
+      '    { "label": "string", "description": "string", "theme": "string" },',
+      '    { "label": "string", "description": "string", "theme": "string" }',
+      '  ]',
+      '}'
+    ].join('\n');
+  }
+
+  async function generateAdaptiveQuestions(meta, fallbackQuestions) {
+    const session = getStudySession();
+    const prompt = buildAdaptiveQuestionsPrompt(session, meta);
+
+    const result = await callGeminiRootedOS(prompt, {
+      json: true,
+      temperature: 0.25,
+      maxOutputTokens: 500
+    });
+
+    if (!result.ok || !result.json) {
+      return {
+        source: 'fallback',
+        questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+        options: fallbackQuestions[0] && fallbackQuestions[0].options
+          ? fallbackQuestions[0].options.map(function (label) {
+              return {
+                label: label,
+                description: 'Select this if it feels closest to the heart of your input.',
+                theme: label
+              };
+            })
+          : [
+              { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+              { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+              { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+            ]
+      };
+    }
+
+    const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
+
+    const cleanedOptions = rawOptions
+      .map(function (option, index) {
+        const fallbackLabel = fallbackQuestions[0] && fallbackQuestions[0].options && fallbackQuestions[0].options[index]
+          ? fallbackQuestions[0].options[index]
+          : 'Theme';
+
+        const rawLabel = String((option && option.label) || '').trim();
+        const rawTheme = String((option && option.theme) || '').trim();
+
+        const safeLabel = isBadAutoLabel(rawLabel)
+          ? (rawTheme && !isBadAutoLabel(rawTheme) ? rawTheme : fallbackLabel)
+          : rawLabel;
+
+        const safeTheme = isBadAutoLabel(rawTheme)
+          ? safeLabel
+          : rawTheme;
+
+        return {
+          label: String(safeLabel || fallbackLabel).trim(),
+          description: String((option && option.description) || '').trim(),
+          theme: String(safeTheme || safeLabel || fallbackLabel).trim()
+        };
+      })
+      .filter(function (option) {
+        return option.label && option.description && option.theme;
+      })
+      .slice(0, 3);
+
+    if (cleanedOptions.length < 3) {
+      return {
+        source: 'fallback',
+        questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+        options: fallbackQuestions[0] && fallbackQuestions[0].options
+          ? fallbackQuestions[0].options.map(function (label) {
+              return {
+                label: label,
+                description: 'Select this if it feels closest to the heart of your input.',
+                theme: label
+              };
+            })
+          : [
+              { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+              { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+              { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+            ]
+      };
+    }
+
+    return {
+      source: 'gemini',
+      questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
+      options: cleanedOptions
+    };
+  }
+
   function bindHomeOrbPanel() {
     const categoryOrbs = document.querySelectorAll('.category-orb');
     const resultPanel = document.getElementById('orb-result-panel');
@@ -578,265 +713,127 @@ async function callGeminiRootedOS(prompt, options) {
     }
   }
 
- function buildAdaptiveQuestionsPrompt(session, meta) {
-  return [
-    'You generate guided discovery question sets for RootedOS.',
-    'RootedOS is not a chatbot and not a search engine.',
-    'It is a guided discovery experience.',
-    '',
-    'Audience: ages 14 to 33+.',
-    'Tone: simple, warm, reflective, clear.',
-    '',
-    'Category: ' + meta.title,
-    'User starting point: ' + (session.input || 'No input provided.'),
-    '',
-    'Rules:',
-    '- Return ONLY valid JSON.',
-    '- Do not include markdown fences.',
-    '- Do not include commentary before or after JSON.',
-    '- Do not quote Bible verses.',
-    '- Do not invent Scripture references.',
-    '- Do not mention AI or Gemini.',
-    '- Create exactly 3 options.',
-    '- Each option must feel distinct but closely related to the user input.',
-    '- Each option label must be short, 1 to 3 words.',
-    '- Each description must be one sentence, under 16 words.',
-    '- Each theme must be short, 1 to 3 words.',
-    '',
-    'Return EXACTLY this schema:',
-    '{',
-    '  "questionTitle": "string",',
-    '  "options": [',
-    '    { "label": "string", "description": "string", "theme": "string" },',
-    '    { "label": "string", "description": "string", "theme": "string" },',
-    '    { "label": "string", "description": "string", "theme": "string" }',
-    '  ]',
-    '}'
-  ].join('\n');
-}
-
-async function generateAdaptiveQuestions(meta, fallbackQuestions) {
-  const session = getStudySession();
-  const prompt = buildAdaptiveQuestionsPrompt(session, meta);
-
-  const result = await callGeminiRootedOS(prompt, {
-    json: true,
-    temperature: 0.25,
-    maxOutputTokens: 500
-  });
-
-  console.log('Adaptive Gemini result:', result);
-
-  if (!result.ok || !result.json) {
-    return {
-      source: 'fallback',
-      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
-      options: fallbackQuestions[0] && fallbackQuestions[0].options
-        ? fallbackQuestions[0].options.map(function (label) {
-            return {
-              label: label,
-              description: 'Select this if it feels closest to the heart of your input.',
-              theme: label
-            };
-          })
-        : [
-            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-          ]
-    };
-  }
-
-  const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
-
-  const cleanedOptions = rawOptions
-    .map(function (option) {
-      return {
-        label: String((option && option.label) || '').trim(),
-        description: String((option && option.description) || '').trim(),
-        theme: String((option && option.theme) || (option && option.label) || '').trim()
-      };
-    })
-    .filter(function (option) {
-      return option.label && option.description && option.theme;
-    })
-    .slice(0, 3);
-
-  console.log('Adaptive cleaned options:', cleanedOptions);
-
-  if (cleanedOptions.length < 3) {
-    return {
-      source: 'fallback',
-      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
-      options: fallbackQuestions[0] && fallbackQuestions[0].options
-        ? fallbackQuestions[0].options.map(function (label) {
-            return {
-              label: label,
-              description: 'Select this if it feels closest to the heart of your input.',
-              theme: label
-            };
-          })
-        : [
-            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-          ]
-    };
-  }
-
-  return {
-    source: 'gemini',
-    questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
-    options: cleanedOptions
-  };
-}
-
-  const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
-
-  const cleanedOptions = rawOptions
-    .map(function (option) {
-      return {
-        label: String((option && option.label) || '').trim(),
-        description: String((option && option.description) || '').trim(),
-        theme: String((option && option.theme) || (option && option.label) || '').trim()
-      };
-    })
-    .filter(function (option) {
-      return option.label && option.description && option.theme;
-    })
-    .slice(0, 3);
-
-  if (cleanedOptions.length < 3) {
-    return {
-      source: 'fallback',
-      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
-      options: fallbackQuestions[0] && fallbackQuestions[0].options
-        ? fallbackQuestions[0].options.map(function (label) {
-            return {
-              label: label,
-              description: 'Select this if it feels closest to the heart of your input.',
-              theme: label
-            };
-          })
-        : [
-            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-          ]
-    };
-  }
-
-  return {
-    source: 'gemini',
-    questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
-    options: cleanedOptions
-  };
-}
-
   function hydrateQuestionPage() {
-  const eyebrow = document.querySelector('.eyebrow');
-  const title = document.querySelector('.page-title h1');
-  const intro = document.querySelector('.page-title p');
-  const tag = document.querySelector('.question-card .scripture-tag');
-  const questionHeading = document.querySelector('.question-card h2');
-  const choiceNodes = document.querySelectorAll('.choice');
-  const pillNodes = document.querySelectorAll('.question-card .pill-row .pill');
-  const state = getStoredTrail();
-  const meta = getMeta();
-  const questions = meta.questions || [];
+    const eyebrow = document.querySelector('.eyebrow');
+    const title = document.querySelector('.page-title h1');
+    const intro = document.querySelector('.page-title p');
+    const tag = document.querySelector('.question-card .scripture-tag');
+    const questionHeading = document.querySelector('.question-card h2');
+    const choiceNodes = document.querySelectorAll('.choice');
+    const pillNodes = document.querySelectorAll('.question-card .pill-row .pill');
+    const meta = getMeta();
+    const questions = meta.questions || [];
 
-  if (!questionHeading || !choiceNodes.length) return;
+    if (!questionHeading || !choiceNodes.length) return;
 
-  applyCategoryTheme();
+    applyCategoryTheme();
 
-  if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
-  if (title) title.textContent = 'Tap what rises to the surface.';
-  if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
-  if (tag) {
-    tag.textContent = hasGeminiKey()
-      ? 'Discovery Node • Preparing adaptive paths'
-      : 'Discovery Node • Local fallback paths';
-  }
-
-  questionHeading.textContent = questions[0] ? questions[0].title : 'What stands out most from this input?';
-
-  function applyQuestionSet(questionSet) {
-    questionHeading.textContent = questions[0]
-  ? questions[0].title
-  : 'What stands out most from this input?';
-
+    if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
+    if (title) title.textContent = 'Tap what rises to the surface.';
+    if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
     if (tag) {
-      tag.textContent = questionSet.source === 'gemini'
-        ? 'Discovery Node • Adaptive paths'
+      tag.textContent = hasGeminiKey()
+        ? 'Discovery Node • Preparing adaptive paths'
         : 'Discovery Node • Local fallback paths';
     }
 
-    choiceNodes.forEach(function (choice, index) {
-      const strong = choice.querySelector('strong');
-      const span = choice.querySelector('span');
-      const option = questionSet.options[index] || questionSet.options[0];
+    const fixedHeading = questions[0]
+      ? questions[0].title
+      : 'What stands out most from this input?';
 
-      if (strong) strong.textContent = option.label;
-      if (span) span.textContent = option.description;
+    questionHeading.textContent = fixedHeading;
 
-      choice.href = 'trail.html?category=' + encodeURIComponent(getActiveCategory());
+    function applyQuestionSet(questionSet) {
+      questionHeading.textContent = fixedHeading;
 
-      choice.addEventListener('click', function () {
-        setStoredTrail({
-          category: getActiveCategory(),
-          questionOne: option.label,
-          questionTwo: '',
-          theme: option.theme || option.label
-        });
-
-        setStudySession({
-          category: getActiveCategory(),
-          categoryTitle: meta.title,
-          questionOne: option.label,
-          questionTwo: '',
-          theme: option.theme || option.label,
-          adaptiveQuestionSource: questionSet.source
-        });
-      });
-    });
-
-    pillNodes.forEach(function (pill, index) {
-      if (index === 0) {
-        pill.textContent = questionSet.source === 'gemini'
-          ? 'Adaptive question layer'
-          : 'Local question layer';
-      } else if (questionSet.options[index - 1]) {
-        pill.textContent = questionSet.options[index - 1].theme || questionSet.options[index - 1].label;
+      if (tag) {
+        tag.textContent = questionSet.source === 'gemini'
+          ? 'Discovery Node • Adaptive paths'
+          : 'Discovery Node • Local fallback paths';
       }
+
+      choiceNodes.forEach(function (choice, index) {
+        const strong = choice.querySelector('strong');
+        const span = choice.querySelector('span');
+        const fallbackLabel = questions[0] && questions[0].options && questions[0].options[index]
+          ? questions[0].options[index]
+          : 'Theme';
+
+        const option = questionSet.options[index] || questionSet.options[0] || {
+          label: fallbackLabel,
+          description: 'Select this if it feels closest to the heart of your input.',
+          theme: fallbackLabel
+        };
+
+        const safeLabel = isBadAutoLabel(option.label) ? fallbackLabel : String(option.label || fallbackLabel).trim();
+        const safeDescription = String(option.description || '').trim() || 'Select this if it feels closest to the heart of your input.';
+        const safeTheme = isBadAutoLabel(option.theme) ? safeLabel : String(option.theme || safeLabel).trim();
+
+        if (strong) strong.textContent = safeLabel;
+        if (span) span.textContent = safeDescription;
+
+        choice.href = 'trail.html?category=' + encodeURIComponent(getActiveCategory());
+
+        choice.onclick = function () {
+          setStoredTrail({
+            category: getActiveCategory(),
+            questionOne: safeLabel,
+            questionTwo: '',
+            theme: safeTheme
+          });
+
+          setStudySession({
+            category: getActiveCategory(),
+            categoryTitle: meta.title,
+            questionOne: safeLabel,
+            questionTwo: '',
+            theme: safeTheme,
+            adaptiveQuestionSource: questionSet.source
+          });
+        };
+      });
+
+      pillNodes.forEach(function (pill, index) {
+        if (index === 0) {
+          pill.textContent = questionSet.source === 'gemini'
+            ? 'Adaptive question layer'
+            : 'Local question layer';
+        } else if (questionSet.options[index - 1]) {
+          const option = questionSet.options[index - 1];
+          const safePill = isBadAutoLabel(option.theme)
+            ? (isBadAutoLabel(option.label) ? 'Theme' : option.label)
+            : option.theme;
+          pill.textContent = safePill;
+        }
+      });
+    }
+
+    const fallbackSet = {
+      source: 'fallback',
+      questionTitle: fixedHeading,
+      options: questions[0] && questions[0].options
+        ? questions[0].options.map(function (label) {
+            return {
+              label: label,
+              description: 'Select this if it feels closest to the heart of your input.',
+              theme: label
+            };
+          })
+        : [
+            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+          ]
+    };
+
+    applyQuestionSet(fallbackSet);
+
+    if (!hasGeminiKey()) return;
+
+    generateAdaptiveQuestions(meta, questions).then(function (questionSet) {
+      applyQuestionSet(questionSet);
     });
   }
-
-  const fallbackSet = {
-    source: 'fallback',
-    questionTitle: questions[0] ? questions[0].title : 'What stands out most from this input?',
-    options: questions[0] && questions[0].options
-      ? questions[0].options.map(function (label) {
-          return {
-            label: label,
-            description: 'Select this if it feels closest to the heart of your input.',
-            theme: label
-          };
-        })
-      : [
-          { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-          { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-          { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-        ]
-  };
-
-  applyQuestionSet(fallbackSet);
-
-  if (!hasGeminiKey()) return;
-
-  generateAdaptiveQuestions(meta, questions).then(function (questionSet) {
-    applyQuestionSet(questionSet);
-  });
-}
 
   function hydrateTrailPage() {
     const eyebrow = document.querySelector('.eyebrow');
