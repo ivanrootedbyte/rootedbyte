@@ -1,19 +1,9 @@
 (function () {
   const STORAGE_KEY = 'rootedosTrail';
-const JOURNAL_KEY = 'rootedosJournalEntries';
-const SESSION_KEY = 'rootedosStudySession';
+  const JOURNAL_KEY = 'rootedosJournalEntries';
+  const SESSION_KEY = 'rootedosStudySession';
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
-const GEMINI_API_KEY = '';
-
-/*
-  MVP NOTE:
-  Do not expose a real Gemini API key in production frontend code long-term.
-  For first local/Vercel prototype testing, this can be used temporarily.
-  Later, move Gemini calls into a Supabase Edge Function or Vercel serverless function.
-*/
-const GEMINI_API_KEY = '';
+  const ROOTEDOS_GEMINI_ENDPOINT = '/api/gemini';
 
   const CATEGORY_META = {
     word: {
