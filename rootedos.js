@@ -747,10 +747,12 @@
     if (title) title.textContent = 'Tap what rises to the surface.';
     if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
     if (tag) {
-      tag.textContent = hasGeminiKey()
-        ? 'Discovery Node • Preparing adaptive paths'
-        : 'Discovery Node • Local fallback paths';
-    }
+  tag.textContent = questionSet.source === 'gemini'
+    ? 'Discovery Node • Adaptive paths'
+    : questionSet.source === 'rate_limited'
+      ? 'Discovery Node • Guided local paths'
+      : 'Discovery Node • Local fallback paths';
+}
 
     const fixedHeading = questions[0]
       ? questions[0].title
