@@ -686,19 +686,7 @@ async function generateAdaptiveQuestions(meta, fallbackQuestions) {
     options: cleanedOptions
   };
 }
-  return {
-    source: 'gemini',
-    questionTitle: result.json.questionTitle || 'What stands out most from this input?',
-    options: result.json.options.slice(0, 3).map(function (option) {
-      return {
-        label: option.label || 'Theme',
-        description: option.description || 'Select this if it feels closest to the heart of your input.',
-        theme: option.theme || option.label || 'Truth Trail Theme'
-      };
-    })
-  };
-}
-  
+
   function hydrateQuestionPage() {
   const eyebrow = document.querySelector('.eyebrow');
   const title = document.querySelector('.page-title h1');
