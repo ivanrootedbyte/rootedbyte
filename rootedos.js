@@ -77,12 +77,18 @@
   }
 
   function hasGeminiKey() {
-    return true;
-  }
+  return true;
+}
 
-  function getGeminiUrl() {
-    return ROOTEDOS_GEMINI_ENDPOINT;
-  }
+function getQuestionTagLabel(source) {
+  if (source === 'gemini') return 'Discovery Node • Adaptive paths';
+  if (source === 'rate_limited') return 'Discovery Node • Guided paths';
+  return 'Discovery Node';
+}
+
+function getGeminiUrl() {
+  return ROOTEDOS_GEMINI_ENDPOINT;
+}
 
   function extractGeminiText(data) {
     const candidate = data &&
@@ -747,9 +753,7 @@
   if (title) title.textContent = 'Tap what rises to the surface.';
   if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
   if (tag) {
-    tag.textContent = hasGeminiKey()
-      ? 'Discovery Node • Preparing adaptive paths'
-      : 'Discovery Node • Local fallback paths';
+    tag.textContent = 'Discovery Node';
   }
 
   const fixedHeading = questions[0]
@@ -762,11 +766,7 @@
     questionHeading.textContent = fixedHeading;
 
     if (tag) {
-      tag.textContent = questionSet.source === 'gemini'
-        ? 'Discovery Node • Adaptive paths'
-        : questionSet.source === 'rate_limited'
-          ? 'Discovery Node • Guided local paths'
-          : 'Discovery Node • Local fallback paths';
+      tag.textContent = getQuestionTagLabel(questionSet.source);
     }
 
     choiceNodes.forEach(function (choice, index) {
@@ -819,11 +819,7 @@
 
     pillNodes.forEach(function (pill, index) {
       if (index === 0) {
-        pill.textContent = questionSet.source === 'gemini'
-          ? 'Adaptive question layer'
-          : questionSet.source === 'rate_limited'
-            ? 'Guided local layer'
-            : 'Local question layer';
+        pill.textContent = 'Question layer';
       } else if (questionSet.options[index - 1]) {
         const option = questionSet.options[index - 1];
         const safePill = isBadAutoLabel(option.theme)
