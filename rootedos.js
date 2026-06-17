@@ -77,18 +77,18 @@
   }
 
   function hasGeminiKey() {
-  return true;
-}
+    return true;
+  }
 
-function getQuestionTagLabel(source) {
-  if (source === 'gemini') return 'Discovery Node • Adaptive paths';
-  if (source === 'rate_limited') return 'Discovery Node • Guided paths';
-  return 'Discovery Node';
-}
+  function getQuestionTagLabel(source) {
+    if (source === 'gemini') return 'Discovery Node • Adaptive paths';
+    if (source === 'rate_limited') return 'Discovery Node • Guided paths';
+    return 'Discovery Node';
+  }
 
-function getGeminiUrl() {
-  return ROOTEDOS_GEMINI_ENDPOINT;
-}
+  function getGeminiUrl() {
+    return ROOTEDOS_GEMINI_ENDPOINT;
+  }
 
   function extractGeminiText(data) {
     const candidate = data &&
@@ -128,67 +128,67 @@ function getGeminiUrl() {
   }
 
   async function callGeminiRootedOS(prompt, options) {
-  const settings = options || {};
-
-  try {
-    const response = await fetch(getGeminiUrl(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        json: Boolean(settings.json),
-        temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
-        maxOutputTokens: settings.maxOutputTokens || 1200
-      })
-    });
-
-    let payload = null;
+    const settings = options || {};
 
     try {
-      payload = await response.json();
-    } catch (jsonError) {
-      payload = null;
-    }
+      const response = await fetch(getGeminiUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          json: Boolean(settings.json),
+          temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.45,
+          maxOutputTokens: settings.maxOutputTokens || 1200
+        })
+      });
 
-    if (response.status === 429) {
+      let payload = null;
+
+      try {
+        payload = await response.json();
+      } catch (jsonError) {
+        payload = null;
+      }
+
+      if (response.status === 429) {
+        return {
+          ok: false,
+          reason: 'rate_limited',
+          text: '',
+          json: null
+        };
+      }
+
+      if (!response.ok || !payload || !payload.ok) {
+        return {
+          ok: false,
+          reason: 'backend_' + response.status,
+          text: '',
+          json: null
+        };
+      }
+
+      const data = payload.data;
+      const text = extractGeminiText(data);
+      const json = settings.json ? parseGeminiJson(text) : null;
+
+      return {
+        ok: true,
+        reason: '',
+        text: text,
+        json: json
+      };
+    } catch (error) {
       return {
         ok: false,
-        reason: 'rate_limited',
+        reason: 'network_or_backend_error',
         text: '',
         json: null
       };
     }
-
-    if (!response.ok || !payload || !payload.ok) {
-      return {
-        ok: false,
-        reason: 'backend_' + response.status,
-        text: '',
-        json: null
-      };
-    }
-
-    const data = payload.data;
-    const text = extractGeminiText(data);
-    const json = settings.json ? parseGeminiJson(text) : null;
-
-    return {
-      ok: true,
-      reason: '',
-      text: text,
-      json: json
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      reason: 'network_or_backend_error',
-      text: '',
-      json: null
-    };
   }
-}
 
   function getStoredTrail() {
     return safeParse(localStorage.getItem(STORAGE_KEY) || '{}', {});
@@ -493,6 +493,22 @@ function getGeminiUrl() {
     return false;
   }
 
+  function setLoadingButton(anchor, text) {
+    if (!anchor) return null;
+    const originalText = anchor.textContent;
+    const originalHref = anchor.getAttribute('href');
+    anchor.textContent = text;
+    anchor.setAttribute('aria-disabled', 'true');
+    anchor.style.pointerEvents = 'none';
+    anchor.removeAttribute('href');
+    return function restore() {
+      anchor.textContent = originalText;
+      anchor.setAttribute('href', originalHref || '#');
+      anchor.removeAttribute('aria-disabled');
+      anchor.style.pointerEvents = '';
+    };
+  }
+
   function buildAdaptiveQuestionsPrompt(session, meta) {
     return [
       'You generate guided discovery question sets for RootedOS.',
@@ -532,91 +548,91 @@ function getGeminiUrl() {
   }
 
   async function generateAdaptiveQuestions(meta, fallbackQuestions) {
-  const session = getStudySession();
-  const prompt = buildAdaptiveQuestionsPrompt(session, meta);
+    const session = getStudySession();
+    const prompt = buildAdaptiveQuestionsPrompt(session, meta);
 
-  const result = await callGeminiRootedOS(prompt, {
-    json: true,
-    temperature: 0.25,
-    maxOutputTokens: 500
-  });
+    const result = await callGeminiRootedOS(prompt, {
+      json: true,
+      temperature: 0.25,
+      maxOutputTokens: 500
+    });
 
-  if (!result.ok || !result.json) {
-    return {
-      source: result.reason === 'rate_limited' ? 'rate_limited' : 'fallback',
-      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
-      options: fallbackQuestions[0] && fallbackQuestions[0].options
-        ? fallbackQuestions[0].options.map(function (label) {
-            return {
-              label: label,
-              description: 'Select this if it feels closest to the heart of your input.',
-              theme: label
-            };
-          })
-        : [
-            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-          ]
-    };
-  }
-
-  const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
-
-  const cleanedOptions = rawOptions
-    .map(function (option, index) {
-      const fallbackLabel = fallbackQuestions[0] && fallbackQuestions[0].options && fallbackQuestions[0].options[index]
-        ? fallbackQuestions[0].options[index]
-        : 'Theme';
-
-      const rawLabel = String((option && option.label) || '').trim();
-      const rawTheme = String((option && option.theme) || '').trim();
-
-      const safeLabel = isBadAutoLabel(rawLabel)
-        ? (rawTheme && !isBadAutoLabel(rawTheme) ? rawTheme : fallbackLabel)
-        : rawLabel;
-
-      const safeTheme = isBadAutoLabel(rawTheme)
-        ? safeLabel
-        : rawTheme;
-
+    if (!result.ok || !result.json) {
       return {
-        label: String(safeLabel || fallbackLabel).trim(),
-        description: String((option && option.description) || '').trim(),
-        theme: String(safeTheme || safeLabel || fallbackLabel).trim()
+        source: result.reason === 'rate_limited' ? 'rate_limited' : 'fallback',
+        questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+        options: fallbackQuestions[0] && fallbackQuestions[0].options
+          ? fallbackQuestions[0].options.map(function (label) {
+              return {
+                label: label,
+                description: 'Select this if it feels closest to the heart of your input.',
+                theme: label
+              };
+            })
+          : [
+              { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+              { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+              { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+            ]
       };
-    })
-    .filter(function (option) {
-      return option.label && option.description && option.theme;
-    })
-    .slice(0, 3);
+    }
 
-  if (cleanedOptions.length < 3) {
+    const rawOptions = Array.isArray(result.json.options) ? result.json.options : [];
+
+    const cleanedOptions = rawOptions
+      .map(function (option, index) {
+        const fallbackLabel = fallbackQuestions[0] && fallbackQuestions[0].options && fallbackQuestions[0].options[index]
+          ? fallbackQuestions[0].options[index]
+          : 'Theme';
+
+        const rawLabel = String((option && option.label) || '').trim();
+        const rawTheme = String((option && option.theme) || '').trim();
+
+        const safeLabel = isBadAutoLabel(rawLabel)
+          ? (rawTheme && !isBadAutoLabel(rawTheme) ? rawTheme : fallbackLabel)
+          : rawLabel;
+
+        const safeTheme = isBadAutoLabel(rawTheme)
+          ? safeLabel
+          : rawTheme;
+
+        return {
+          label: String(safeLabel || fallbackLabel).trim(),
+          description: String((option && option.description) || '').trim(),
+          theme: String(safeTheme || safeLabel || fallbackLabel).trim()
+        };
+      })
+      .filter(function (option) {
+        return option.label && option.description && option.theme;
+      })
+      .slice(0, 3);
+
+    if (cleanedOptions.length < 3) {
+      return {
+        source: 'fallback',
+        questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
+        options: fallbackQuestions[0] && fallbackQuestions[0].options
+          ? fallbackQuestions[0].options.map(function (label) {
+              return {
+                label: label,
+                description: 'Select this if it feels closest to the heart of your input.',
+                theme: label
+              };
+            })
+          : [
+              { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+              { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+              { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+            ]
+      };
+    }
+
     return {
-      source: 'fallback',
-      questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
-      options: fallbackQuestions[0] && fallbackQuestions[0].options
-        ? fallbackQuestions[0].options.map(function (label) {
-            return {
-              label: label,
-              description: 'Select this if it feels closest to the heart of your input.',
-              theme: label
-            };
-          })
-        : [
-            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-          ]
+      source: 'gemini',
+      questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
+      options: cleanedOptions
     };
   }
-
-  return {
-    source: 'gemini',
-    questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
-    options: cleanedOptions
-  };
-}
 
   function bindHomeOrbPanel() {
     const categoryOrbs = document.querySelectorAll('.category-orb');
@@ -632,7 +648,7 @@ function getGeminiUrl() {
     const desktopPreviewText = document.querySelector('.desktop-preview p');
     const desktopPreviewButton = document.querySelector('.desktop-preview .ghost-btn');
     const desktopOrbit = document.querySelector('.desktop-orbit');
-    
+
     categoryOrbs.forEach(function (orb) {
       orb.addEventListener('click', function (event) {
         event.preventDefault();
@@ -642,9 +658,9 @@ function getGeminiUrl() {
         });
 
         if (desktopOrbit) {
-  desktopOrbit.classList.add('has-active');
-}
-        
+          desktopOrbit.classList.add('has-active');
+        }
+
         orb.classList.add('active');
 
         const category = orb.dataset.category || 'life';
@@ -653,16 +669,17 @@ function getGeminiUrl() {
         const glow = orb.dataset.glow || '94,183,255';
         const href = orb.getAttribute('href') || 'input.html?category=life';
 
-        setStoredTrail({
-          category: category,
-          input: '',
-          theme: '',
-          questionOne: '',
-          questionTwo: ''
-        });
-
-        resetStudySession(category);
-        applyCategoryTheme();
+        if (CATEGORY_META[category]) {
+          setStoredTrail({
+            category: category,
+            input: '',
+            theme: '',
+            questionOne: '',
+            questionTwo: ''
+          });
+          resetStudySession(category);
+          applyCategoryTheme();
+        }
 
         if (resultTitle) resultTitle.textContent = title;
         if (resultDesc) resultDesc.textContent = desc;
@@ -698,6 +715,7 @@ function getGeminiUrl() {
 
     const category = getActiveCategory();
     const meta = getMeta();
+    const stored = getStoredTrail();
 
     setStoredTrail({ category: category });
     setStudySession({
@@ -708,11 +726,10 @@ function getGeminiUrl() {
     applyCategoryTheme();
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Input Node';
-
     title.textContent = 'Start with one honest thing.';
     intro.textContent = meta.desc;
-    inputBox.placeholder = meta.sampleInput || 'Type your question, topic, scene, emotion, or Bible passage...';
-    inputBox.value = getStoredTrail().input || '';
+    inputBox.placeholder = meta.sampleInput || 'Type your topic, scene, question, emotion, or Bible passage...';
+    inputBox.value = stored.input || '';
     inputBox.setAttribute('data-selected-category', category);
 
     pillNodes.forEach(function (pill, index) {
@@ -722,8 +739,14 @@ function getGeminiUrl() {
     if (primaryLink) {
       primaryLink.href = 'questions.html?category=' + encodeURIComponent(category);
 
-      primaryLink.addEventListener('click', function () {
+      primaryLink.addEventListener('click', function (event) {
         const cleanInput = inputBox.value.trim();
+
+        if (!cleanInput) {
+          event.preventDefault();
+          inputBox.focus();
+          return;
+        }
 
         setStoredTrail({
           category: category,
@@ -740,689 +763,636 @@ function getGeminiUrl() {
   }
 
   function hydrateQuestionPage() {
-  const eyebrow = document.querySelector('.eyebrow');
-  const title = document.querySelector('.page-title h1');
-  const intro = document.querySelector('.page-title p');
-  const tag = document.querySelector('.question-card .scripture-tag');
-  const questionHeading = document.querySelector('.question-card h2');
-  const choiceNodes = document.querySelectorAll('.choice');
-  const pillNodes = document.querySelectorAll('.question-card .pill-row .pill');
-  const meta = getMeta();
-  const questions = meta.questions || [];
+    const eyebrow = document.querySelector('.eyebrow');
+    const title = document.querySelector('.page-title h1');
+    const intro = document.querySelector('.page-title p');
+    const tag = document.querySelector('.question-card .scripture-tag');
+    const questionHeading = document.querySelector('.question-card h2');
+    const choiceNodes = document.querySelectorAll('.choice');
+    const pillNodes = document.querySelectorAll('.question-card .pill-row .pill');
+    const meta = getMeta();
+    const questions = meta.questions || [];
 
-  if (!questionHeading || !choiceNodes.length) return;
+    if (!questionHeading || !choiceNodes.length) return;
 
-  applyCategoryTheme();
+    applyCategoryTheme();
 
-  if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
-  if (title) title.textContent = 'Tap what rises to the surface.';
-  if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
-  if (tag) {
-    tag.textContent = 'Discovery Node';
-  }
+    if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
+    if (title) title.textContent = 'Tap what rises to the surface.';
+    if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
+    if (tag) tag.textContent = 'Discovery Node';
 
-  const fixedHeading = questions[0]
-    ? questions[0].title
-    : 'What stands out most from this input?';
+    const fixedHeading = questions[0]
+      ? questions[0].title
+      : 'What stands out most from this input?';
 
-  questionHeading.textContent = fixedHeading;
-
-  function applyQuestionSet(questionSet) {
     questionHeading.textContent = fixedHeading;
 
-    if (tag) {
-      tag.textContent = getQuestionTagLabel(questionSet.source);
+    function applyQuestionSet(questionSet) {
+      questionHeading.textContent = fixedHeading;
+
+      if (tag) {
+        tag.textContent = getQuestionTagLabel(questionSet.source);
+      }
+
+      choiceNodes.forEach(function (choice, index) {
+        const strong = choice.querySelector('strong');
+        const span = choice.querySelector('span');
+        const fallbackLabel = questions[0] && questions[0].options && questions[0].options[index]
+          ? questions[0].options[index]
+          : 'Theme';
+
+        const option = questionSet.options[index] || questionSet.options[0] || {
+          label: fallbackLabel,
+          description: 'Select this if it feels closest to the heart of your input.',
+          theme: fallbackLabel
+        };
+
+        const safeLabel = isBadAutoLabel(option.label)
+          ? fallbackLabel
+          : String(option.label || fallbackLabel).trim();
+
+        const safeDescription = String(option.description || '').trim()
+          || 'Select this if it feels closest to the heart of your input.';
+
+        const safeTheme = isBadAutoLabel(option.theme)
+          ? safeLabel
+          : String(option.theme || safeLabel).trim();
+
+        if (strong) strong.textContent = safeLabel;
+        if (span) span.textContent = safeDescription;
+
+        choice.href = 'trail.html?category=' + encodeURIComponent(getActiveCategory());
+
+        choice.onclick = function () {
+          setStoredTrail({
+            category: getActiveCategory(),
+            questionOne: safeLabel,
+            questionTwo: '',
+            theme: safeTheme
+          });
+
+          setStudySession({
+            category: getActiveCategory(),
+            categoryTitle: meta.title,
+            questionOne: safeLabel,
+            questionTwo: '',
+            theme: safeTheme,
+            adaptiveQuestionSource: questionSet.source
+          });
+        };
+      });
+
+      pillNodes.forEach(function (pill, index) {
+        if (index === 0) {
+          pill.textContent = 'Question layer';
+        } else if (questionSet.options[index - 1]) {
+          const option = questionSet.options[index - 1];
+          const safePill = isBadAutoLabel(option.theme)
+            ? (isBadAutoLabel(option.label) ? 'Theme' : option.label)
+            : option.theme;
+          pill.textContent = safePill;
+        }
+      });
     }
 
-    choiceNodes.forEach(function (choice, index) {
-      const strong = choice.querySelector('strong');
-      const span = choice.querySelector('span');
-      const fallbackLabel = questions[0] && questions[0].options && questions[0].options[index]
-        ? questions[0].options[index]
-        : 'Theme';
+    const fallbackSet = {
+      source: 'fallback',
+      questionTitle: fixedHeading,
+      options: questions[0] && questions[0].options
+        ? questions[0].options.map(function (label) {
+            return {
+              label: label,
+              description: 'Select this if it feels closest to the heart of your input.',
+              theme: label
+            };
+          })
+        : [
+            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+          ]
+    };
 
-      const option = questionSet.options[index] || questionSet.options[0] || {
-        label: fallbackLabel,
-        description: 'Select this if it feels closest to the heart of your input.',
-        theme: fallbackLabel
-      };
+    applyQuestionSet(fallbackSet);
 
-      const safeLabel = isBadAutoLabel(option.label)
-        ? fallbackLabel
-        : String(option.label || fallbackLabel).trim();
+    if (!hasGeminiKey()) return;
 
-      const safeDescription = String(option.description || '').trim()
-        || 'Select this if it feels closest to the heart of your input.';
-
-      const safeTheme = isBadAutoLabel(option.theme)
-        ? safeLabel
-        : String(option.theme || safeLabel).trim();
-
-      if (strong) strong.textContent = safeLabel;
-      if (span) span.textContent = safeDescription;
-
-      choice.href = 'trail.html?category=' + encodeURIComponent(getActiveCategory());
-
-      choice.onclick = function () {
-        setStoredTrail({
-          category: getActiveCategory(),
-          questionOne: safeLabel,
-          questionTwo: '',
-          theme: safeTheme
-        });
-
-        setStudySession({
-          category: getActiveCategory(),
-          categoryTitle: meta.title,
-          questionOne: safeLabel,
-          questionTwo: '',
-          theme: safeTheme,
-          adaptiveQuestionSource: questionSet.source
-        });
-      };
-    });
-
-    pillNodes.forEach(function (pill, index) {
-      if (index === 0) {
-        pill.textContent = 'Question layer';
-      } else if (questionSet.options[index - 1]) {
-        const option = questionSet.options[index - 1];
-        const safePill = isBadAutoLabel(option.theme)
-          ? (isBadAutoLabel(option.label) ? 'Theme' : option.label)
-          : option.theme;
-        pill.textContent = safePill;
-      }
+    generateAdaptiveQuestions(meta, questions).then(function (questionSet) {
+      applyQuestionSet(questionSet);
     });
   }
-
-  const fallbackSet = {
-    source: 'fallback',
-    questionTitle: fixedHeading,
-    options: questions[0] && questions[0].options
-      ? questions[0].options.map(function (label) {
-          return {
-            label: label,
-            description: 'Select this if it feels closest to the heart of your input.',
-            theme: label
-          };
-        })
-      : [
-          { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-          { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-          { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
-        ]
-  };
-
-  applyQuestionSet(fallbackSet);
-
-  if (!hasGeminiKey()) return;
-
-  generateAdaptiveQuestions(meta, questions).then(function (questionSet) {
-    applyQuestionSet(questionSet);
-  });
-}
 
   function buildTrailPrompt(session, meta) {
-  return [
-    'You generate a guided truth trail for RootedOS.',
-    'RootedOS is not a chatbot and not a search engine.',
-    'It is a guided discovery experience moving from a real user starting point toward a clear truth trail.',
-    '',
-    'Audience: ages 14 to 33+.',
-    'Tone: clear, grounded, reflective, simple, warm.',
-    '',
-    'Category: ' + meta.title,
-    'User starting point: ' + (session.input || 'No input provided.'),
-    'Selected question path: ' + (session.questionOne || 'None selected.'),
-    'Theme if present: ' + (session.theme || 'None yet.'),
-    '',
-    'Rules:',
-    '- Return ONLY valid JSON.',
-    '- Do not include markdown fences.',
-    '- Do not include commentary before or after JSON.',
-    '- Do not invent Bible verses.',
-    '- Do not invent Scripture references.',
-    '- If exact Scripture is not verified, use the exact text: "Scripture reference required (not generated)".',
-    '- Biblical parallel must be concept-level, not a fake citation.',
-    '- Truth statement should be clear, concise, and meaningful.',
-    '- Study title should sound usable for a real study session.',
-    '',
-    'Return EXACTLY this schema:',
-    '{',
-    '  "startingPoint": "string",',
-    '  "coreTheme": "string",',
-    '  "biblicalParallel": "string",',
-    '  "scriptureConnection": "Scripture reference required (not generated)",',
-    '  "truthStatement": "string",',
-    '  "studyTitle": "string"',
-    '}'
-  ].join('\n');
-}
-
-async function generateTrailMap(meta) {
-  const session = getStudySession();
-  const prompt = buildTrailPrompt(session, meta);
-
-  const result = await callGeminiRootedOS(prompt, {
-    json: true,
-    temperature: 0.3,
-    maxOutputTokens: 700
-  });
-
-  if (!result.ok || !result.json) {
-    return null;
+    return [
+      'You generate a guided truth trail for RootedOS.',
+      'RootedOS is not a chatbot and not a search engine.',
+      'It is a guided discovery experience moving from a real user starting point toward a clear truth trail.',
+      '',
+      'Audience: ages 14 to 33+.',
+      'Tone: clear, grounded, reflective, simple, warm.',
+      '',
+      'Category: ' + meta.title,
+      'User starting point: ' + (session.input || 'No input provided.'),
+      'Selected question path: ' + (session.questionOne || 'None selected.'),
+      'Theme if present: ' + (session.theme || 'None yet.'),
+      '',
+      'Rules:',
+      '- Return ONLY valid JSON.',
+      '- Do not include markdown fences.',
+      '- Do not include commentary before or after JSON.',
+      '- Do not invent Bible verses.',
+      '- Do not invent Scripture references.',
+      '- If exact Scripture is not verified, use the exact text: "Scripture reference required (not generated)".',
+      '- Biblical parallel must be concept-level, not a fake citation.',
+      '- Truth statement should be clear, concise, and meaningful.',
+      '- Study title should sound usable for a real study session.',
+      '',
+      'Return EXACTLY this schema:',
+      '{',
+      '  "startingPoint": "string",',
+      '  "coreTheme": "string",',
+      '  "biblicalParallel": "string",',
+      '  "scriptureConnection": "Scripture reference required (not generated)",',
+      '  "truthStatement": "string",',
+      '  "studyTitle": "string"',
+      '}'
+    ].join('\n');
   }
 
-  return {
-    startingPoint: String(result.json.startingPoint || session.input || meta.sampleInput || '').trim(),
-    coreTheme: String(result.json.coreTheme || session.theme || 'Truth Trail Theme').trim(),
-    biblicalParallel: String(result.json.biblicalParallel || '').trim(),
-    scriptureConnection: result.json.scriptureConnection === 'Scripture reference required (not generated)'
-      ? 'Scripture reference required (not generated)'
-      : 'Scripture reference required (not generated)',
-    truthStatement: String(result.json.truthStatement || '').trim(),
-    studyTitle: String(result.json.studyTitle || '').trim()
-  };
-}
-    
+  async function generateTrailMap(meta) {
+    const session = getStudySession();
+    const prompt = buildTrailPrompt(session, meta);
+
+    const result = await callGeminiRootedOS(prompt, {
+      json: true,
+      temperature: 0.3,
+      maxOutputTokens: 700
+    });
+
+    if (!result.ok || !result.json) {
+      return null;
+    }
+
+    return {
+      startingPoint: String(result.json.startingPoint || session.input || meta.sampleInput || '').trim(),
+      coreTheme: String(result.json.coreTheme || session.theme || 'Truth Trail Theme').trim(),
+      biblicalParallel: String(result.json.biblicalParallel || '').trim(),
+      scriptureConnection: 'Scripture reference required (not generated)',
+      truthStatement: String(result.json.truthStatement || '').trim(),
+      studyTitle: String(result.json.studyTitle || '').trim()
+    };
+  }
 
   function hydrateTrailPage() {
-  const eyebrow = document.querySelector('.eyebrow');
-  const title = document.querySelector('.page-title h1');
-  const intro = document.querySelector('.page-title p');
-  const trailItems = document.querySelectorAll('.trail-content');
-  const continueButton = document.querySelector('.primary-btn');
-  const state = getStoredTrail();
-  const meta = getMeta();
-  const theme = ensureTheme(state) || 'Truth Trail Theme';
-  const support = themeSupport(theme, getActiveCategory());
+    const eyebrow = document.querySelector('.eyebrow');
+    const title = document.querySelector('.page-title h1');
+    const intro = document.querySelector('.page-title p');
+    const trailItems = document.querySelectorAll('.trail-content');
+    const continueButton = document.querySelector('.primary-btn');
+    const state = getStoredTrail();
+    const meta = getMeta();
+    const theme = ensureTheme(state) || 'Truth Trail Theme';
+    const support = themeSupport(theme, getActiveCategory());
 
-  if (!trailItems.length) return;
+    if (!trailItems.length) return;
 
-  applyCategoryTheme();
+    applyCategoryTheme();
 
-  if (eyebrow) eyebrow.textContent = meta.title + ' • Truth Trail Map';
-  if (title) title.textContent = 'A journey, not a reply.';
-  if (intro) intro.textContent = 'Your pathway moves from a real starting point toward a core theme, a Biblical parallel, a Scripture connection, and a truth statement.';
+    if (eyebrow) eyebrow.textContent = meta.title + ' • Truth Trail Map';
+    if (title) title.textContent = 'A journey, not a reply.';
+    if (intro) intro.textContent = 'Your pathway moves from a real starting point toward a core theme, a Biblical parallel, a Scripture connection, and a truth statement.';
 
-  function renderTrail(labels) {
-    trailItems.forEach(function (item, index) {
-      const strong = item.querySelector('strong');
-      const muted = item.querySelector('.muted');
-      const tag = item.querySelector('.scripture-tag');
+    function renderTrail(labels) {
+      trailItems.forEach(function (item, index) {
+        const strong = item.querySelector('strong');
+        const muted = item.querySelector('.muted');
+        const tag = item.querySelector('.scripture-tag');
 
-      if (labels[index]) {
-        if (strong) strong.textContent = labels[index].title;
-        if (muted) muted.textContent = labels[index].text;
-        if (tag) {
-          if (labels[index].tag) {
-            tag.textContent = labels[index].tag;
-          } else {
-            tag.textContent = '';
+        if (labels[index]) {
+          if (strong) strong.textContent = labels[index].title;
+          if (muted) muted.textContent = labels[index].text;
+          if (tag) {
+            tag.textContent = labels[index].tag || '';
           }
         }
-      }
-    });
-  }
-
-  const fallbackLabels = [
-    { title: 'Starting Point', text: state.input || meta.sampleInput },
-    { title: 'Core Theme', text: theme },
-    { title: 'Biblical Parallel', text: support.parallel },
-    { title: 'Scripture Connection', text: 'Scripture reference required (not generated)', tag: 'NASB / NIV / GNB only' },
-    { title: 'Truth Statement', text: support.truth }
-  ];
-
-  renderTrail(fallbackLabels);
-
-  if (continueButton) {
-    continueButton.href = 'study.html?category=' + encodeURIComponent(getActiveCategory());
-  }
-
-  setStoredTrail({
-    theme: theme,
-    truthStatement: support.truth,
-    biblicalParallel: support.parallel,
-    scriptureConnection: 'Scripture reference required (not generated)',
-    studyTitle: support.studyTitle
-  });
-
-  setStudySession({
-    category: getActiveCategory(),
-    categoryTitle: meta.title,
-    input: state.input || meta.sampleInput,
-    theme: theme,
-    biblicalParallel: support.parallel,
-    scriptureConnection: 'Scripture reference required (not generated)',
-    truthStatement: support.truth,
-    studyTitle: support.studyTitle,
-    trailMap: {
-      startingPoint: state.input || meta.sampleInput,
-      coreTheme: theme,
-      biblicalParallel: support.parallel,
-      scriptureConnection: 'Scripture reference required (not generated)',
-      truthStatement: support.truth
+      });
     }
-  });
 
-  generateTrailMap(meta).then(function (generated) {
-    if (!generated) return;
-
-    const actualLabels = [
-      { title: 'Starting Point', text: generated.startingPoint || state.input || meta.sampleInput },
-      { title: 'Core Theme', text: generated.coreTheme || theme },
-      { title: 'Biblical Parallel', text: generated.biblicalParallel || support.parallel },
+    const fallbackLabels = [
+      { title: 'Starting Point', text: state.input || meta.sampleInput },
+      { title: 'Core Theme', text: theme },
+      { title: 'Biblical Parallel', text: support.parallel },
       { title: 'Scripture Connection', text: 'Scripture reference required (not generated)', tag: 'NASB / NIV / GNB only' },
-      { title: 'Truth Statement', text: generated.truthStatement || support.truth }
+      { title: 'Truth Statement', text: support.truth }
     ];
 
-    renderTrail(actualLabels);
+    renderTrail(fallbackLabels);
+
+    if (continueButton) {
+      continueButton.href = 'study.html?category=' + encodeURIComponent(getActiveCategory());
+      const restore = setLoadingButton(continueButton, 'Building Trail…');
+      setTimeout(function () {
+        if (restore) restore();
+      }, 700);
+    }
 
     setStoredTrail({
-      theme: generated.coreTheme || theme,
-      truthStatement: generated.truthStatement || support.truth,
-      biblicalParallel: generated.biblicalParallel || support.parallel,
+      theme: theme,
+      truthStatement: support.truth,
+      biblicalParallel: support.parallel,
       scriptureConnection: 'Scripture reference required (not generated)',
-      studyTitle: generated.studyTitle || support.studyTitle
+      studyTitle: support.studyTitle
     });
 
     setStudySession({
       category: getActiveCategory(),
       categoryTitle: meta.title,
       input: state.input || meta.sampleInput,
-      theme: generated.coreTheme || theme,
-      biblicalParallel: generated.biblicalParallel || support.parallel,
+      theme: theme,
+      biblicalParallel: support.parallel,
       scriptureConnection: 'Scripture reference required (not generated)',
-      truthStatement: generated.truthStatement || support.truth,
-      studyTitle: generated.studyTitle || support.studyTitle,
+      truthStatement: support.truth,
+      studyTitle: support.studyTitle,
       trailMap: {
-        startingPoint: generated.startingPoint || state.input || meta.sampleInput,
-        coreTheme: generated.coreTheme || theme,
-        biblicalParallel: generated.biblicalParallel || support.parallel,
+        startingPoint: state.input || meta.sampleInput,
+        coreTheme: theme,
+        biblicalParallel: support.parallel,
         scriptureConnection: 'Scripture reference required (not generated)',
-        truthStatement: generated.truthStatement || support.truth
+        truthStatement: support.truth
       }
     });
-  });
-}
+
+    generateTrailMap(meta).then(function (generated) {
+      if (!generated) return;
+
+      const actualLabels = [
+        { title: 'Starting Point', text: generated.startingPoint || state.input || meta.sampleInput },
+        { title: 'Core Theme', text: generated.coreTheme || theme },
+        { title: 'Biblical Parallel', text: generated.biblicalParallel || support.parallel },
+        { title: 'Scripture Connection', text: 'Scripture reference required (not generated)', tag: 'NASB / NIV / GNB only' },
+        { title: 'Truth Statement', text: generated.truthStatement || support.truth }
+      ];
+
+      renderTrail(actualLabels);
+
+      setStoredTrail({
+        theme: generated.coreTheme || theme,
+        truthStatement: generated.truthStatement || support.truth,
+        biblicalParallel: generated.biblicalParallel || support.parallel,
+        scriptureConnection: 'Scripture reference required (not generated)',
+        studyTitle: generated.studyTitle || support.studyTitle
+      });
+
+      setStudySession({
+        category: getActiveCategory(),
+        categoryTitle: meta.title,
+        input: state.input || meta.sampleInput,
+        theme: generated.coreTheme || theme,
+        biblicalParallel: generated.biblicalParallel || support.parallel,
+        scriptureConnection: 'Scripture reference required (not generated)',
+        truthStatement: generated.truthStatement || support.truth,
+        studyTitle: generated.studyTitle || support.studyTitle,
+        trailMap: {
+          startingPoint: generated.startingPoint || state.input || meta.sampleInput,
+          coreTheme: generated.coreTheme || theme,
+          biblicalParallel: generated.biblicalParallel || support.parallel,
+          scriptureConnection: 'Scripture reference required (not generated)',
+          truthStatement: generated.truthStatement || support.truth
+        }
+      });
+    });
+  }
 
   function buildStudyPrompt(session, meta) {
-  const trail = session.trailMap || {};
+    const trail = session.trailMap || {};
 
-  return [
-    'You generate a study builder output for RootedOS.',
-    'RootedOS is a guided discovery experience, not a chatbot.',
-    '',
-    'Audience: ages 14 to 33+.',
-    'Tone: clear, rooted, reflective, simple, thoughtful.',
-    '',
-    'Category: ' + meta.title,
-    'Starting point: ' + (trail.startingPoint || session.input || 'No starting point provided.'),
-    'Core theme: ' + (trail.coreTheme || session.theme || 'No theme provided.'),
-    'Biblical parallel: ' + (trail.biblicalParallel || 'No biblical parallel provided.'),
-    'Truth statement: ' + (trail.truthStatement || session.truthStatement || 'No truth statement provided.'),
-    '',
-    'Rules:',
-    '- Return ONLY valid JSON.',
-    '- Do not include markdown fences.',
-    '- Do not include commentary before or after JSON.',
-    '- Do not invent Bible verses.',
-    '- Do not invent Scripture references.',
-    '- The keyScriptures field must contain only this exact text: "Scripture reference required (not generated)".',
-    '- Exegesis/context should be concept-level only until Scripture is verified.',
-    '- Discussion questions should feel usable in a real study or small group.',
-    '- Reflection prompts should feel personal and practical.',
-    '- Prayer should be short, sincere, and grounded.',
-    '- Slide outline should be concise and usable.',
-    '',
-    'Return EXACTLY this schema:',
-    '{',
-    '  "studyTitle": "string",',
-    '  "mainTheme": "string",',
-    '  "keyScriptures": ["Scripture reference required (not generated)"],',
-    '  "exegesisContext": "string",',
-    '  "discussionQuestions": ["string", "string", "string", "string"],',
-    '  "reflectionPrompts": ["string", "string", "string"],',
-    '  "prayer": "string",',
-    '  "slideOutline": ["string", "string", "string", "string", "string", "string"]',
-    '}'
-  ].join('\n');
-}
-
-async function generateStudyOutput(meta) {
-  const session = getStudySession();
-  const prompt = buildStudyPrompt(session, meta);
-
-  const result = await callGeminiRootedOS(prompt, {
-    json: true,
-    temperature: 0.3,
-    maxOutputTokens: 1000
-  });
-
-  if (!result.ok || !result.json) {
-    return null;
+    return [
+      'You generate a study builder output for RootedOS.',
+      'RootedOS is a guided discovery experience, not a chatbot.',
+      '',
+      'Audience: ages 14 to 33+.',
+      'Tone: clear, rooted, reflective, simple, thoughtful.',
+      '',
+      'Category: ' + meta.title,
+      'Starting point: ' + (trail.startingPoint || session.input || 'No starting point provided.'),
+      'Core theme: ' + (trail.coreTheme || session.theme || 'No theme provided.'),
+      'Biblical parallel: ' + (trail.biblicalParallel || 'No biblical parallel provided.'),
+      'Truth statement: ' + (trail.truthStatement || session.truthStatement || 'No truth statement provided.'),
+      '',
+      'Rules:',
+      '- Return ONLY valid JSON.',
+      '- Do not include markdown fences.',
+      '- Do not include commentary before or after JSON.',
+      '- Do not invent Bible verses.',
+      '- Do not invent Scripture references.',
+      '- The keyScriptures field must contain only this exact text: "Scripture reference required (not generated)".',
+      '- Exegesis/context should be concept-level only until Scripture is verified.',
+      '- Discussion questions should feel usable in a real study or small group.',
+      '- Reflection prompts should feel personal and practical.',
+      '- Prayer should be short, sincere, and grounded.',
+      '- Slide outline should be concise and usable.',
+      '',
+      'Return EXACTLY this schema:',
+      '{',
+      '  "studyTitle": "string",',
+      '  "mainTheme": "string",',
+      '  "keyScriptures": ["Scripture reference required (not generated)"],',
+      '  "exegesisContext": "string",',
+      '  "discussionQuestions": ["string", "string", "string", "string"],',
+      '  "reflectionPrompts": ["string", "string", "string"],',
+      '  "prayer": "string",',
+      '  "slideOutline": ["string", "string", "string", "string", "string", "string"]',
+      '}'
+    ].join('\n');
   }
 
-  const json = result.json;
+  async function generateStudyOutput(meta) {
+    const session = getStudySession();
+    const prompt = buildStudyPrompt(session, meta);
 
-  return {
-    studyTitle: String(json.studyTitle || session.studyTitle || 'Guided Study').trim(),
-    mainTheme: String(json.mainTheme || session.theme || 'Truth Trail Theme').trim(),
-    keyScriptures: ['Scripture reference required (not generated)'],
-    exegesisContext: String(json.exegesisContext || '').trim(),
-    discussionQuestions: Array.isArray(json.discussionQuestions)
-      ? json.discussionQuestions.slice(0, 4).map(function (item) { return String(item || '').trim(); }).filter(Boolean)
-      : [],
-    reflectionPrompts: Array.isArray(json.reflectionPrompts)
-      ? json.reflectionPrompts.slice(0, 3).map(function (item) { return String(item || '').trim(); }).filter(Boolean)
-      : [],
-    prayer: String(json.prayer || '').trim(),
-    slideOutline: Array.isArray(json.slideOutline)
-      ? json.slideOutline.slice(0, 6).map(function (item) { return String(item || '').trim(); }).filter(Boolean)
-      : []
-  };
-}
-  
-  function hydrateStudyPage() {
-  const eyebrow = document.querySelector('.eyebrow');
-  const pageTitle = document.querySelector('.page-title h1');
-  const pageIntro = document.querySelector('.page-title p');
-  const sections = document.querySelectorAll('.study-section');
-  const state = getStoredTrail();
-  const meta = getMeta();
-  const theme = ensureTheme(state) || 'Truth Trail Theme';
-  const support = themeSupport(theme, getActiveCategory());
+    const result = await callGeminiRootedOS(prompt, {
+      json: true,
+      temperature: 0.3,
+      maxOutputTokens: 1000
+    });
 
-  if (!sections.length) return;
-
-  applyCategoryTheme();
-
-  if (eyebrow) eyebrow.textContent = meta.title + ' • Study Builder';
-  if (pageTitle) pageTitle.textContent = 'Turn discovery into a guide.';
-  if (pageIntro) pageIntro.textContent = 'This output is shaped for easy reading, small groups, personal reflection, and future Bible study building.';
-
-  const primary = sections[0];
-  const secondary = sections[1];
-
-  const primaryTitle = primary.querySelector('h2');
-  const primaryParagraphs = primary.querySelectorAll('.muted');
-  const primaryLists = primary.querySelectorAll('ul');
-  const primaryHeadings = primary.querySelectorAll('h3');
-  const tag = primary.querySelector('.scripture-tag');
-
-  if (tag) tag.textContent = 'Scripture reference required (not generated)';
-  if (primaryTitle) primaryTitle.textContent = state.studyTitle || support.studyTitle;
-
-  if (primaryHeadings[0]) primaryHeadings[0].textContent = 'Main Theme';
-  if (primaryParagraphs[0]) primaryParagraphs[0].textContent = theme;
-
-  if (primaryHeadings[1]) primaryHeadings[1].textContent = 'Key Scriptures';
-  if (primaryLists[0]) {
-    primaryLists[0].innerHTML = '<li>Scripture reference required (not generated)</li>';
-  }
-
-  const bridgesHeading = document.createElement('h3');
-  bridgesHeading.textContent = 'Scripture Bridges';
-  bridgesHeading.setAttribute('data-bridges', 'true');
-
-  const bridgesList = document.createElement('ul');
-  bridgesList.innerHTML = '<li>Old Testament connection: add only when a clear related passage is verified.</li><li>New Testament connection: add only when a clear related passage is verified.</li><li>Related theme or story bridge: do not force parallels if they are not present.</li>';
-
-  if (primaryHeadings[2]) primaryHeadings[2].textContent = 'Exegesis / Context';
-  if (primaryParagraphs[1]) {
-    primaryParagraphs[1].textContent = 'Explain what the chosen passage means in context using clear, age-appropriate language. Keep it simple, grounded, and easy to follow.';
-  }
-
-  const inclusioHeading = document.createElement('h3');
-  inclusioHeading.textContent = 'Inclusio / Literary Pattern';
-
-  const inclusioParagraph = document.createElement('p');
-  inclusioParagraph.className = 'muted';
-  inclusioParagraph.textContent = 'No clear inclusio identified in this passage. Only include this section when the selected text truly contains a repeated opening and closing frame or another clear literary bracket.';
-
-  const truthHeading = document.createElement('h3');
-  truthHeading.textContent = 'Truth Statement';
-
-  const truthParagraph = document.createElement('p');
-  truthParagraph.className = 'muted';
-  truthParagraph.textContent = state.truthStatement || support.truth;
-
-  if (!primary.querySelector('[data-bridges]')) {
-    primary.appendChild(bridgesHeading);
-    primary.appendChild(bridgesList);
-    primary.appendChild(inclusioHeading);
-    primary.appendChild(inclusioParagraph);
-    primary.appendChild(truthHeading);
-    primary.appendChild(truthParagraph);
-  }
-
-  const secondaryHeadings = secondary.querySelectorAll('h3');
-  const secondaryLists = secondary.querySelectorAll('ul');
-  const secondaryParagraph = secondary.querySelector('.muted');
-  const shareButton = secondary.querySelector('.ghost-btn');
-
-  if (secondaryHeadings[0]) secondaryHeadings[0].textContent = 'Discussion Questions';
-  if (secondaryLists[0]) {
-    secondaryLists[0].innerHTML = '<li>What part of the starting point felt most real to you?</li><li>How did the core theme become clearer through the trail?</li><li>Where do you see this theme in everyday life?</li><li>What is one response step this truth invites this week?</li>';
-  }
-
-  if (secondaryHeadings[1]) secondaryHeadings[1].textContent = 'Reflection Prompts';
-  if (secondaryLists[1]) {
-    secondaryLists[1].innerHTML = '<li>Write one honest sentence about what this theme reveals in you.</li><li>Name one truth you need to remember this week.</li><li>What question do you still want Scripture to answer more clearly?</li>';
-  }
-
-  const activityHeading = document.createElement('h3');
-  activityHeading.textContent = 'Group Activity / Application';
-  activityHeading.setAttribute('data-activity', 'true');
-
-  const activityList = document.createElement('ul');
-  activityList.innerHTML = '<li>Share your starting point in one sentence.</li><li>Compare which theme surfaced for each person.</li><li>Build a shared list of verified Scripture bridges before finalizing the study.</li>';
-
-  const outlineHeading = document.createElement('h3');
-  outlineHeading.textContent = 'Optional PowerPoint Outline';
-
-  const outlineList = document.createElement('ul');
-  outlineList.innerHTML = '<li>Slide 1: Study title</li><li>Slide 2: Starting point and category</li><li>Slide 3: Core theme</li><li>Slide 4: Scripture connection</li><li>Slide 5: Truth statement</li><li>Slide 6: Reflection and prayer</li>';
-
-  if (!secondary.querySelector('[data-activity]')) {
-    secondary.appendChild(activityHeading);
-    secondary.appendChild(activityList);
-    secondary.appendChild(outlineHeading);
-    secondary.appendChild(outlineList);
-  }
-
-  if (secondaryHeadings[2]) secondaryHeadings[2].textContent = 'Prayer Section';
-  if (secondaryParagraph) {
-    secondaryParagraph.textContent = 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
-  }
-
-  if (shareButton) {
-    shareButton.textContent = 'Preview Sharing →';
-  }
-
-  setStudySession({
-    category: getActiveCategory(),
-    categoryTitle: meta.title,
-    input: state.input || meta.sampleInput,
-    theme: theme,
-    biblicalParallel: state.biblicalParallel || support.parallel,
-    scriptureConnection: 'Scripture reference required (not generated)',
-    truthStatement: state.truthStatement || support.truth,
-    studyTitle: state.studyTitle || support.studyTitle,
-    studyOutput: {
-      title: state.studyTitle || support.studyTitle,
-      mainTheme: theme,
-      keyScriptures: ['Scripture reference required (not generated)'],
-      exegesisContext: primaryParagraphs[1] ? primaryParagraphs[1].textContent : '',
-      scriptureBridges: [
-        'Old Testament connection: add only when a clear related passage is verified.',
-        'New Testament connection: add only when a clear related passage is verified.'
-      ],
-      inclusio: 'No clear inclusio identified in this passage.',
-      truthStatement: state.truthStatement || support.truth,
-      discussionQuestions: [
-        'What part of the starting point felt most real to you?',
-        'How did the core theme become clearer through the trail?',
-        'Where do you see this theme in everyday life?',
-        'What is one response step this truth invites this week?'
-      ],
-      reflectionPrompts: [
-        'Write one honest sentence about what this theme reveals in you.',
-        'Name one truth you need to remember this week.',
-        'What question do you still want Scripture to answer more clearly?'
-      ],
-      prayer: 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.',
-      slideOutline: [
-        'Slide 1: Study title',
-        'Slide 2: Starting point and category',
-        'Slide 3: Core theme',
-        'Slide 4: Scripture connection',
-        'Slide 5: Truth statement',
-        'Slide 6: Reflection and prayer'
-      ]
+    if (!result.ok || !result.json) {
+      return null;
     }
-  });
 
-  generateStudyOutput(meta).then(function (generated) {
-    if (!generated) return;
+    const json = result.json;
 
-    if (primaryTitle) primaryTitle.textContent = generated.studyTitle || state.studyTitle || support.studyTitle;
-    if (primaryParagraphs[0]) primaryParagraphs[0].textContent = generated.mainTheme || theme;
+    return {
+      studyTitle: String(json.studyTitle || session.studyTitle || 'Guided Study').trim(),
+      mainTheme: String(json.mainTheme || session.theme || 'Truth Trail Theme').trim(),
+      keyScriptures: ['Scripture reference required (not generated)'],
+      exegesisContext: String(json.exegesisContext || '').trim(),
+      discussionQuestions: Array.isArray(json.discussionQuestions)
+        ? json.discussionQuestions.slice(0, 4).map(function (item) { return String(item || '').trim(); }).filter(Boolean)
+        : [],
+      reflectionPrompts: Array.isArray(json.reflectionPrompts)
+        ? json.reflectionPrompts.slice(0, 3).map(function (item) { return String(item || '').trim(); }).filter(Boolean)
+        : [],
+      prayer: String(json.prayer || '').trim(),
+      slideOutline: Array.isArray(json.slideOutline)
+        ? json.slideOutline.slice(0, 6).map(function (item) { return String(item || '').trim(); }).filter(Boolean)
+        : []
+    };
+  }
 
+  function hydrateStudyPage() {
+    const eyebrow = document.querySelector('.eyebrow');
+    const pageTitle = document.querySelector('.page-title h1');
+    const pageIntro = document.querySelector('.page-title p');
+    const sections = document.querySelectorAll('.study-section');
+    const state = getStoredTrail();
+    const meta = getMeta();
+    const theme = ensureTheme(state) || 'Truth Trail Theme';
+    const support = themeSupport(theme, getActiveCategory());
+
+    if (!sections.length) return;
+
+    applyCategoryTheme();
+
+    if (eyebrow) eyebrow.textContent = meta.title + ' • Study Builder';
+    if (pageTitle) pageTitle.textContent = 'Turn discovery into a guide.';
+    if (pageIntro) pageIntro.textContent = 'This output is shaped for easy reading, small groups, personal reflection, and future Bible study building.';
+
+    const primary = sections[0];
+    const secondary = sections[1];
+
+    const primaryTitle = primary.querySelector('h2');
+    const primaryParagraphs = primary.querySelectorAll('.muted');
+    const primaryLists = primary.querySelectorAll('ul');
+    const primaryHeadings = primary.querySelectorAll('h3');
+    const tag = primary.querySelector('.scripture-tag');
+
+    if (tag) tag.textContent = 'Scripture reference required (not generated)';
+    if (primaryTitle) primaryTitle.textContent = state.studyTitle || support.studyTitle;
+
+    if (primaryHeadings[0]) primaryHeadings[0].textContent = 'Main Theme';
+    if (primaryParagraphs[0]) primaryParagraphs[0].textContent = theme;
+
+    if (primaryHeadings[1]) primaryHeadings[1].textContent = 'Key Scriptures';
     if (primaryLists[0]) {
       primaryLists[0].innerHTML = '<li>Scripture reference required (not generated)</li>';
     }
 
+    const bridgesHeading = document.createElement('h3');
+    bridgesHeading.textContent = 'Scripture Bridges';
+    bridgesHeading.setAttribute('data-bridges', 'true');
+
+    const bridgesList = document.createElement('ul');
+    bridgesList.innerHTML = '<li>Old Testament connection: add only when a clear related passage is verified.</li><li>New Testament connection: add only when a clear related passage is verified.</li><li>Related theme or story bridge: do not force parallels if they are not present.</li>';
+
+    if (primaryHeadings[2]) primaryHeadings[2].textContent = 'Exegesis / Context';
     if (primaryParagraphs[1]) {
-      primaryParagraphs[1].textContent = generated.exegesisContext || 'Explain what the chosen passage means in context using clear, age-appropriate language.';
+      primaryParagraphs[1].textContent = 'Explain what the chosen passage means in context using clear, age-appropriate language. Keep it simple, grounded, and easy to follow.';
     }
 
+    const truthHeading = document.createElement('h3');
+    truthHeading.textContent = 'Truth Statement';
+
+    const truthParagraph = document.createElement('p');
+    truthParagraph.className = 'muted';
     truthParagraph.textContent = state.truthStatement || support.truth;
 
+    if (!primary.querySelector('[data-bridges]')) {
+      primary.appendChild(bridgesHeading);
+      primary.appendChild(bridgesList);
+      primary.appendChild(truthHeading);
+      primary.appendChild(truthParagraph);
+    }
+
+    const secondaryHeadings = secondary.querySelectorAll('h3');
+    const secondaryLists = secondary.querySelectorAll('ul');
+    const secondaryParagraph = secondary.querySelector('.muted');
+    const shareButton = secondary.querySelector('.ghost-btn');
+
+    if (secondaryHeadings[0]) secondaryHeadings[0].textContent = 'Discussion Questions';
     if (secondaryLists[0]) {
-      const discussionItems = (generated.discussionQuestions && generated.discussionQuestions.length)
-        ? generated.discussionQuestions
-        : [
-            'What part of the starting point felt most real to you?',
-            'How did the core theme become clearer through the trail?',
-            'Where do you see this theme in everyday life?',
-            'What is one response step this truth invites this week?'
-          ];
-
-      secondaryLists[0].innerHTML = discussionItems
-        .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
-        .join('');
+      secondaryLists[0].innerHTML = '<li>What part of the starting point felt most real to you?</li><li>How did the core theme become clearer through the trail?</li><li>Where do you see this theme in everyday life?</li><li>What is one response step this truth invites this week?</li>';
     }
 
+    if (secondaryHeadings[1]) secondaryHeadings[1].textContent = 'Reflection Prompts';
     if (secondaryLists[1]) {
-      const reflectionItems = (generated.reflectionPrompts && generated.reflectionPrompts.length)
-        ? generated.reflectionPrompts
-        : [
-            'Write one honest sentence about what this theme reveals in you.',
-            'Name one truth you need to remember this week.',
-            'What question do you still want Scripture to answer more clearly?'
-          ];
-
-      secondaryLists[1].innerHTML = reflectionItems
-        .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
-        .join('');
+      secondaryLists[1].innerHTML = '<li>Write one honest sentence about what this theme reveals in you.</li><li>Name one truth you need to remember this week.</li><li>What question do you still want Scripture to answer more clearly?</li>';
     }
 
+    if (secondaryHeadings[2]) secondaryHeadings[2].textContent = 'Prayer Section';
     if (secondaryParagraph) {
-      secondaryParagraph.textContent = generated.prayer || 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
+      secondaryParagraph.textContent = 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
     }
 
-    if (outlineList) {
-      const outlineItems = (generated.slideOutline && generated.slideOutline.length)
-        ? generated.slideOutline
-        : [
-            'Slide 1: Study title',
-            'Slide 2: Starting point and category',
-            'Slide 3: Core theme',
-            'Slide 4: Scripture connection',
-            'Slide 5: Truth statement',
-            'Slide 6: Reflection and prayer'
-          ];
-
-      outlineList.innerHTML = outlineItems
-        .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
-        .join('');
+    if (shareButton) {
+      shareButton.textContent = 'Preview Sharing →';
     }
-
-    setStoredTrail({
-      studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle
-    });
 
     setStudySession({
       category: getActiveCategory(),
       categoryTitle: meta.title,
       input: state.input || meta.sampleInput,
-      theme: generated.mainTheme || theme,
+      theme: theme,
       biblicalParallel: state.biblicalParallel || support.parallel,
       scriptureConnection: 'Scripture reference required (not generated)',
       truthStatement: state.truthStatement || support.truth,
-      studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle,
+      studyTitle: state.studyTitle || support.studyTitle,
       studyOutput: {
-        title: generated.studyTitle || state.studyTitle || support.studyTitle,
-        mainTheme: generated.mainTheme || theme,
+        title: state.studyTitle || support.studyTitle,
+        mainTheme: theme,
         keyScriptures: ['Scripture reference required (not generated)'],
-        exegesisContext: generated.exegesisContext || '',
+        exegesisContext: primaryParagraphs[1] ? primaryParagraphs[1].textContent : '',
         scriptureBridges: [
           'Old Testament connection: add only when a clear related passage is verified.',
           'New Testament connection: add only when a clear related passage is verified.'
         ],
-        inclusio: 'No clear inclusio identified in this passage.',
         truthStatement: state.truthStatement || support.truth,
-        discussionQuestions: generated.discussionQuestions || [],
-        reflectionPrompts: generated.reflectionPrompts || [],
-        prayer: generated.prayer || '',
-        slideOutline: generated.slideOutline || []
+        discussionQuestions: [
+          'What part of the starting point felt most real to you?',
+          'How did the core theme become clearer through the trail?',
+          'Where do you see this theme in everyday life?',
+          'What is one response step this truth invites this week?'
+        ],
+        reflectionPrompts: [
+          'Write one honest sentence about what this theme reveals in you.',
+          'Name one truth you need to remember this week.',
+          'What question do you still want Scripture to answer more clearly?'
+        ],
+        prayer: 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.',
+        slideOutline: [
+          'Slide 1: Study title',
+          'Slide 2: Starting point and category',
+          'Slide 3: Core theme',
+          'Slide 4: Scripture connection',
+          'Slide 5: Truth statement',
+          'Slide 6: Reflection and prayer'
+        ]
       }
     });
-  });
 
-  const saveStudyBtn = document.querySelector('[data-save-study-journal]');
-  const saveStudyStatus = document.querySelector('[data-study-save-status]');
+    generateStudyOutput(meta).then(function (generated) {
+      if (!generated) return;
 
-  if (saveStudyBtn) {
-    saveStudyBtn.addEventListener('click', function (event) {
-      event.preventDefault();
+      if (primaryTitle) primaryTitle.textContent = generated.studyTitle || state.studyTitle || support.studyTitle;
+      if (primaryParagraphs[0]) primaryParagraphs[0].textContent = generated.mainTheme || theme;
 
-      const freshState = getStoredTrail();
-      const freshTheme = ensureTheme(freshState) || theme || 'Truth Trail Theme';
-      const freshSupport = themeSupport(freshTheme, getActiveCategory());
-      const freshMeta = getMeta();
+      if (primaryLists[0]) {
+        primaryLists[0].innerHTML = '<li>Scripture reference required (not generated)</li>';
+      }
 
-      const entry = normalizeJournalEntry({
-        id: 'study_' + Date.now(),
-        dateKey: todayKey(),
-        createdAt: new Date().toISOString(),
-        source: 'study',
-        category: getActiveCategory(),
-        categoryTitle: freshMeta.title,
-        input: freshState.input || freshMeta.sampleInput || '',
-        theme: freshTheme,
-        studyTitle: freshState.studyTitle || freshSupport.studyTitle || 'Saved Study',
-        text: buildStudyJournalText(freshState, freshMeta, freshTheme, freshSupport),
-        truthStatement: freshState.truthStatement || freshSupport.truth,
-        scriptureConnection: 'Scripture reference required (not generated)',
-        biblicalParallel: freshState.biblicalParallel || freshSupport.parallel
+      if (primaryParagraphs[1]) {
+        primaryParagraphs[1].textContent = generated.exegesisContext || 'Explain what the chosen passage means in context using clear, age-appropriate language.';
+      }
+
+      truthParagraph.textContent = state.truthStatement || support.truth;
+
+      if (secondaryLists[0]) {
+        const discussionItems = (generated.discussionQuestions && generated.discussionQuestions.length)
+          ? generated.discussionQuestions
+          : [
+              'What part of the starting point felt most real to you?',
+              'How did the core theme become clearer through the trail?',
+              'Where do you see this theme in everyday life?',
+              'What is one response step this truth invites this week?'
+            ];
+
+        secondaryLists[0].innerHTML = discussionItems
+          .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
+          .join('');
+      }
+
+      if (secondaryLists[1]) {
+        const reflectionItems = (generated.reflectionPrompts && generated.reflectionPrompts.length)
+          ? generated.reflectionPrompts
+          : [
+              'Write one honest sentence about what this theme reveals in you.',
+              'Name one truth you need to remember this week.',
+              'What question do you still want Scripture to answer more clearly?'
+            ];
+
+        secondaryLists[1].innerHTML = reflectionItems
+          .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
+          .join('');
+      }
+
+      if (secondaryParagraph) {
+        secondaryParagraph.textContent = generated.prayer || 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
+      }
+
+      setStoredTrail({
+        studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle
       });
-
-      saveJournalEntry(entry);
 
       setStudySession({
-        savedJournalId: entry.id
+        category: getActiveCategory(),
+        categoryTitle: meta.title,
+        input: state.input || meta.sampleInput,
+        theme: generated.mainTheme || theme,
+        biblicalParallel: state.biblicalParallel || support.parallel,
+        scriptureConnection: 'Scripture reference required (not generated)',
+        truthStatement: state.truthStatement || support.truth,
+        studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle,
+        studyOutput: {
+          title: generated.studyTitle || state.studyTitle || support.studyTitle,
+          mainTheme: generated.mainTheme || theme,
+          keyScriptures: ['Scripture reference required (not generated)'],
+          exegesisContext: generated.exegesisContext || '',
+          scriptureBridges: [
+            'Old Testament connection: add only when a clear related passage is verified.',
+            'New Testament connection: add only when a clear related passage is verified.'
+          ],
+          truthStatement: state.truthStatement || support.truth,
+          discussionQuestions: generated.discussionQuestions || [],
+          reflectionPrompts: generated.reflectionPrompts || [],
+          prayer: generated.prayer || '',
+          slideOutline: generated.slideOutline || []
+        }
       });
-
-      if (saveStudyStatus) {
-        saveStudyStatus.textContent = 'Study saved to Journal locally on this device.';
-      }
-
-      saveStudyBtn.textContent = 'Saved to Journal ✓';
     });
+
+    const saveStudyBtn = document.querySelector('[data-save-study-journal]');
+    const saveStudyStatus = document.querySelector('[data-study-save-status]');
+
+    if (saveStudyBtn) {
+      saveStudyBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+
+        const freshState = getStoredTrail();
+        const freshTheme = ensureTheme(freshState) || theme || 'Truth Trail Theme';
+        const freshSupport = themeSupport(freshTheme, getActiveCategory());
+        const freshMeta = getMeta();
+
+        const entry = normalizeJournalEntry({
+          id: 'study_' + Date.now(),
+          dateKey: todayKey(),
+          createdAt: new Date().toISOString(),
+          source: 'study',
+          category: getActiveCategory(),
+          categoryTitle: freshMeta.title,
+          input: freshState.input || freshMeta.sampleInput || '',
+          theme: freshTheme,
+          studyTitle: freshState.studyTitle || freshSupport.studyTitle || 'Saved Study',
+          text: buildStudyJournalText(freshState, freshMeta, freshTheme, freshSupport),
+          truthStatement: freshState.truthStatement || freshSupport.truth,
+          scriptureConnection: 'Scripture reference required (not generated)',
+          biblicalParallel: freshState.biblicalParallel || freshSupport.parallel
+        });
+
+        saveJournalEntry(entry);
+
+        setStudySession({
+          savedJournalId: entry.id
+        });
+
+        if (saveStudyStatus) {
+          saveStudyStatus.textContent = 'Study saved to Journal locally on this device.';
+        }
+
+        saveStudyBtn.textContent = 'Saved to Journal ✓';
+      });
+    }
   }
-}
 
   function hydrateJournalPage() {
     const textarea = document.querySelector('[data-journal-input]');
