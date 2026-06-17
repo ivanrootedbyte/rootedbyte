@@ -495,3 +495,111 @@ button,input,textarea{font:inherit}
   }
   .category-content{font-size:8.8px}
 }
+
+/* ===== FIX STRAY ORB IN TOP-LEFT + CLEAN MOBILE SAFE AREA ===== */
+
+/* keep header above all spheres */
+.topbar{
+  z-index:30;
+}
+
+/* keep activated orb scene clipped inside the frame */
+.frame{
+  overflow:hidden;
+}
+
+.activation-pane{
+  overflow:hidden;
+}
+
+/* mobile/tablet safe area */
+@media screen and (max-width: 980px){
+  .activation-pane{
+    --orbit-x: 50%;
+    --orbit-y: 50%;
+    padding-top:72px;
+  }
+
+  .orb-center{
+    top:var(--orbit-y);
+  }
+
+  /* push full mobile ring slightly lower and keep it inside frame */
+  .cat-culture{
+    left:calc(var(--orbit-x) - 132px);
+    top:calc(var(--orbit-y) - 70px);
+  }
+
+  .cat-word{
+    left:calc(var(--orbit-x) + 132px);
+    top:calc(var(--orbit-y) - 70px);
+  }
+
+  .cat-science{
+    left:calc(var(--orbit-x) - 184px);
+    top:calc(var(--orbit-y) + 26px);
+  }
+
+  .cat-movies{
+    left:calc(var(--orbit-x) + 184px);
+    top:calc(var(--orbit-y) + 26px);
+  }
+
+  .cat-emotions{
+    left:calc(var(--orbit-x) - 132px);
+    top:calc(var(--orbit-y) + 138px);
+  }
+
+  .cat-life{
+    left:calc(var(--orbit-x) + 132px);
+    top:calc(var(--orbit-y) + 138px);
+  }
+
+  .cat-journal{
+    left:calc(var(--orbit-x) + 0px);
+    top:calc(var(--orbit-y) + 220px);
+  }
+}
+
+@media screen and (max-width: 560px){
+  .activation-pane{
+    --orbit-x: 50%;
+    --orbit-y: 49%;
+    padding-top:68px;
+  }
+
+  .cat-culture{
+    left:calc(var(--orbit-x) - 122px);
+    top:calc(var(--orbit-y) - 66px);
+  }
+
+  .cat-word{
+    left:calc(var(--orbit-x) + 122px);
+    top:calc(var(--orbit-y) - 66px);
+  }
+
+  .cat-science{
+    left:calc(var(--orbit-x) - 168px);
+    top:calc(var(--orbit-y) + 24px);
+  }
+
+  .cat-movies{
+    left:calc(var(--orbit-x) + 168px);
+    top:calc(var(--orbit-y) + 24px);
+  }
+
+  .cat-emotions{
+    left:calc(var(--orbit-x) - 122px);
+    top:calc(var(--orbit-y) + 132px);
+  }
+
+  .cat-life{
+    left:calc(var(--orbit-x) + 122px);
+    top:calc(var(--orbit-y) + 132px);
+  }
+
+  .cat-journal{
+    left:calc(var(--orbit-x) + 0px);
+    top:calc(var(--orbit-y) + 204px);
+  }
+}
