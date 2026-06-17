@@ -631,7 +631,8 @@ function getGeminiUrl() {
     const desktopPreviewTitle = document.querySelector('.desktop-preview h2');
     const desktopPreviewText = document.querySelector('.desktop-preview p');
     const desktopPreviewButton = document.querySelector('.desktop-preview .ghost-btn');
-
+    const desktopOrbit = document.querySelector('.desktop-orbit');
+    
     categoryOrbs.forEach(function (orb) {
       orb.addEventListener('click', function (event) {
         event.preventDefault();
@@ -640,6 +641,10 @@ function getGeminiUrl() {
           item.classList.remove('active');
         });
 
+        if (desktopOrbit) {
+  desktopOrbit.classList.add('has-active');
+}
+        
         orb.classList.add('active');
 
         const category = orb.dataset.category || 'life';
