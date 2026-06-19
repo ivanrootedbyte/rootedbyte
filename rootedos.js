@@ -704,7 +704,7 @@
   }
 
   function hydrateInputPage() {
-    const inputBox = document.querySelector('.input-box');
+    const inputBox = document.querySelector('[data-discovery-input]');
     const title = document.querySelector('.page-title h1');
     const intro = document.querySelector('.page-title p');
     const eyebrow = document.querySelector('.eyebrow');
