@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RootedOS | My Account</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    :root {
+      --account-card: rgba(255,255,255,0.08);
+      --account-card-strong: rgba(255,255,255,0.13);
+      --account-border: rgba(255,255,255,0.16);
+      --account-text-soft: rgba(255,255,255,0.68);
+      --account-text-muted: rgba(255,255,255,0.48);
+      --account-glow: rgba(173, 216, 255, 0.22);
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .account-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    .account-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .account-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .account-brand-orb {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.95), rgba(255,255,255,0.18) 28%, transparent 58%),
+        radial-gradient(circle at 60% 70%, rgba(147,197,253,0.7), rgba(99,102,241,0.25) 46%, rgba(255,255,255,0.08));
+      box-shadow: 0 0 34px rgba(147,197,253,0.36);
+    }
+
+    .account-links {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .account-link {
+      color: rgba(255,255,255,0.72);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.045);
+    }
+
+    .account-link:hover {
+      color: white;
+      background: rgba(255,255,255,0.09);
+    }
+
+    .account-hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--account-border);
+      border-radius: 32px;
+      padding: clamp(24px, 4vw, 42px);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(147,197,253,0.18), transparent 34%),
+        radial-gradient(circle at 82% 12%, rgba(196,181,253,0.16), transparent 30%),
+        linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0.045));
+      box-shadow: 0 24px 90px rgba(0,0,0,0.22);
+      backdrop-filter: blur(18px);
+    }
+
+    .account-hero::after {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -100px;
+      bottom: -120px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.42), transparent 26%),
+        radial-gradient(circle, rgba(147,197,253,0.28), transparent 68%);
+      filter: blur(2px);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .account-kicker {
+      color: var(--account-text-soft);
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .account-title {
+      font-size: clamp(2.05rem, 5vw, 4.4rem);
+      line-height: 0.95;
+      letter-spacing: -0.075em;
+      margin: 0;
+    }
+
+    .account-subtitle {
+      max-width: 720px;
+      margin: 18px 0 0;
+      color: var(--account-text-soft);
+      line-height: 1.65;
+      font-size: 1rem;
+    }
+
+    .account-user-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    .account-pill {
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.07);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: rgba(255,255,255,0.74);
+      font-size: 0.92rem;
+    }
+
+    .account-pill strong {
+      color: white;
+    }
+
+    .account-button {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 750;
+      color: #08111f;
+      background: rgba(255,255,255,0.88);
+      cursor: pointer;
+      box-shadow: 0 0 28px rgba(255,255,255,0.12);
+    }
+
+    .account-button.secondary {
+      color: rgba(255,255,255,0.84);
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.07);
+      box-shadow: none;
+    }
+
+    .account-grid {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .account-panel {
+      border: 1px solid var(--account-border);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(147,197,253,0.1), transparent 34%),
+        linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+      backdrop-filter: blur(16px);
+      padding: 22px;
+      box-shadow: 0 18px 70px rgba(0,0,0,0.18);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1.08rem;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-note {
+      margin: 5px 0 0;
+      color: var(--account-text-muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      min-height: 112px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      width: 88px;
+      height: 88px;
+      right: -34px;
+      bottom: -34px;
+      border-radius: 999px;
+      background: radial-gradient(circle, var(--account-glow), transparent 70%);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+    }
+
+    .stat-label {
+      color: var(--account-text-soft);
+      font-size: 0.85rem;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .account-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .account-item {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.11);
+      background: rgba(255,255,255,0.055);
+      padding: 15px;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+    }
+
+    .account-item:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    .item-topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .item-title {
+      font-weight: 760;
+      letter-spacing: -0.025em;
+      line-height: 1.25;
+    }
+
+    .item-date {
+      white-space: nowrap;
+      color: var(--account-text-muted);
+      font-size: 0.76rem;
+      padding-top: 2px;
+    }
+
+    .item-meta {
+      color: rgba(255,255,255,0.56);
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+    }
+
+    .item-text {
+      color: var(--account-text-soft);
+      font-size: 0.9rem;
+      line-height: 1.52;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+
+    .empty-state {
+      border-radius: 22px;
+      border: 1px dashed rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.04);
+      padding: 18px;
+      color: var(--account-text-soft);
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .account-loading {
+      color: var(--account-text-soft);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    .account-error {
+      margin-top: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(248,113,113,0.22);
+      background: rgba(248,113,113,0.08);
+      color: rgba(255,255,255,0.78);
+      padding: 13px 14px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      display: none;
+    }
+
+    .account-error.is-visible {
+      display: block;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 860px) {
+      .account-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .account-nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .account-links {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .account-shell {
+        width: min(100% - 22px, 1180px);
+        padding-top: 18px;
+      }
+
+      .account-hero,
+      .account-panel {
+        border-radius: 24px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .item-topline {
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .item-date {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="account-shell">
+    <nav class="account-nav" aria-label="RootedOS account navigation">
+      <a class="account-brand" href="index.html">
+        <span class="account-brand-orb" aria-hidden="true"></span>
+        <span>RootedOS</span>
+      </a>
+
+      <div class="account-links">
+        <a class="account-link" href="index.html">Home</a>
+        <a class="account-link" href="journal.html">Journal</a>
+        <a class="account-link" href="input.html">New Discovery</a>
+      </div>
+    </nav>
+
+    <section class="account-hero">
+      <div class="account-kicker">My Account</div>
+      <h1 class="account-title">Your discovery trail.</h1>
+      <p class="account-subtitle">
+        View your recent studies, journal reflections, and basic growth rhythm in one calm place.
+      </p>
+
+      <div class="account-user-row">
+        <div class="account-pill" id="accountUserPill">Checking sign-in…</div>
+        <button class="account-button secondary" id="accountRefreshButton" type="button">Refresh</button>
+        <button class="account-button" id="accountSignOutButton" type="button" hidden>Sign out</button>
+      </div>
+
+      <div class="account-error" id="accountError"></div>
+    </section>
+
+    <section class="account-grid" aria-label="Account dashboard">
+      <div class="account-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Growth Stats</h2>
+            <p class="panel-note">Simple progress based on your saved local and cloud activity.</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card">
+            <div class="stat-value" id="statStudies">0</div>
+            <div class="stat-label">Studies saved</div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-value" id="statJournal">0</div>
+            <div class="stat-label">Journal entries</div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-value" id="statCategories">0</div>
+            <div class="stat-label">Categories explored</div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-value" id="statStreak">0</div>
+            <div class="stat-label">Active days</div>
+          </article>
+        </div>
+
+        <div class="quick-actions">
+          <a class="account-button" href="input.html" style="text-decoration:none;">Start a new discovery</a>
+          <a class="account-button secondary" href="journal.html" style="text-decoration:none;">Open journal</a>
+        </div>
+      </div>
+
+      <div class="account-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Recent Studies</h2>
+            <p class="panel-note">Your newest study outputs from this browser and cloud saves where available.</p>
+          </div>
+        </div>
+
+        <div class="account-loading" id="studiesLoading">Loading recent studies…</div>
+        <div class="account-list" id="recentStudiesList"></div>
+      </div>
+
+      <div class="account-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Recent Journal Entries</h2>
+            <p class="panel-note">Recent reflections saved from your RootedOS flow.</p>
+          </div>
+        </div>
+
+        <div class="account-loading" id="journalLoading">Loading recent journal entries…</div>
+        <div class="account-list" id="recentJournalList"></div>
+      </div>
+
+      <div class="account-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Production Notes</h2>
+            <p class="panel-note">Helpful status checks before launch.</p>
+          </div>
+        </div>
+
+        <div class="account-list">
+          <div class="account-item">
+            <div class="item-title">Auth</div>
+            <div class="item-text" id="authStatusText">Checking Supabase auth state…</div>
+          </div>
+
+          <div class="account-item">
+            <div class="item-title">Cloud Sync</div>
+            <div class="item-text" id="cloudStatusText">Checking available cloud data…</div>
+          </div>
+
+          <div class="account-item">
+            <div class="item-title">Local Backup</div>
+            <div class="item-text" id="localStatusText">Checking browser saves…</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/api/public-config.js"></script>
+  <script src="supabase.js"></script>
+  <script src="rootedos.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.RootedOSAccount && typeof window.RootedOSAccount.init === 'function') {
+        window.RootedOSAccount.init();
+      }
+    });
+  </script>
+</body>
+</html>
