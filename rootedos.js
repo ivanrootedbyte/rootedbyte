@@ -1682,8 +1682,13 @@ async function saveJournalEntryToCloudIfSignedIn(entry) {
       try {
         await window.RootedOSSupabase.signInWithMagicLink(email);
         if (authMessage) authMessage.textContent = 'Magic link sent. Check your email.';
-      } catch (error) {
-        if (authMessage) authMessage.textContent = 'Could not send magic link. Please try again.';
+            } catch (error) {
+        console.error('Magic link error:', error);
+        if (authMessage) {
+          authMessage.textContent = error && error.message
+            ? 'Magic link error: ' + error.message
+            : 'Could not send magic link. Please try again.';
+        }
       } finally {
         sendLinkButton.disabled = false;
         sendLinkButton.textContent = 'Send Magic Link';
