@@ -12,9 +12,9 @@
       pills: ['Bible passage', 'Study question', 'Theme', 'Book chapter'],
       sampleInput: 'Romans 12 and renewing the mind',
       questions: [
-        { title: 'What stands out most?', options: ['Obedience', 'Renewal', 'Sacrifice'] },
-        { title: 'What feels most personal here?', options: ['Identity', 'Calling', 'Transformation'] }
-      ]
+  { title: 'What do you want to understand more clearly in this passage?', options: ['Meaning', 'Context', 'Application'] },
+  { title: 'What feels most important in this passage right now?', options: ['Identity', 'Obedience', 'Transformation'] }
+]
     },
     culture: {
       title: 'Culture',
