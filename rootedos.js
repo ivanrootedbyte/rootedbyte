@@ -1741,3 +1741,557 @@ addCategoryToEyebrow();
     callGeminiRootedOS: callGeminiRootedOS
   };
 })();
+
+/* =========================================================
+   RootedOS Account Dashboard Support
+   Safe add-on for account.html
+   ========================================================= */
+
+(function () {
+  const MAX_RECENT_ITEMS = 5;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function safeJsonParse(value, fallback) {
+    try {
+      if (!value) return fallback;
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+
+  function readStorageArray(keys) {
+    const output = [];
+
+    keys.forEach((key) => {
+      const localValue = safeJsonParse(localStorage.getItem(key), null);
+      const sessionValue = safeJsonParse(sessionStorage.getItem(key), null);
+
+      [localValue, sessionValue].forEach((value) => {
+        if (Array.isArray(value)) {
+          output.push(...value);
+        } else if (value && typeof value === 'object') {
+          output.push(value);
+        }
+      });
+    });
+
+    return output;
+  }
+
+  function getSupabaseClient() {
+    if (window.RootedOSSupabase && window.RootedOSSupabase.client) {
+      return window.RootedOSSupabase.client;
+    }
+
+    if (window.rootedSupabase) {
+      return window.rootedSupabase;
+    }
+
+    if (window.supabaseClient) {
+      return window.supabaseClient;
+    }
+
+    if (
+      window.supabase &&
+      window.ROOTEDOS_PUBLIC_CONFIG &&
+      window.ROOTEDOS_PUBLIC_CONFIG.supabaseUrl &&
+      window.ROOTEDOS_PUBLIC_CONFIG.supabaseAnonKey
+    ) {
+      return window.supabase.createClient(
+        window.ROOTEDOS_PUBLIC_CONFIG.supabaseUrl,
+        window.ROOTEDOS_PUBLIC_CONFIG.supabaseAnonKey
+      );
+    }
+
+    if (
+      window.supabase &&
+      window.__PUBLIC_CONFIG__ &&
+      window.__PUBLIC_CONFIG__.supabaseUrl &&
+      window.__PUBLIC_CONFIG__.supabaseAnonKey
+    ) {
+      return window.supabase.createClient(
+        window.__PUBLIC_CONFIG__.supabaseUrl,
+        window.__PUBLIC_CONFIG__.supabaseAnonKey
+      );
+    }
+
+    return null;
+  }
+
+  function textFrom(value) {
+    if (value == null) return '';
+
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+
+    if (typeof value === 'object') {
+      return (
+        value.output ||
+        value.result ||
+        value.response ||
+        value.reflection ||
+        value.study ||
+        value.content ||
+        value.body ||
+        value.text ||
+        value.answer ||
+        ''
+      ).toString().trim();
+    }
+
+    return String(value).trim();
+  }
+
+  function getCreatedAt(item) {
+    return (
+      item.created_at ||
+      item.createdAt ||
+      item.updated_at ||
+      item.saved_at ||
+      item.savedAt ||
+      item.date ||
+      item.timestamp ||
+      item.time ||
+      new Date().toISOString()
+    );
+  }
+
+  function getCategory(item) {
+    return (
+      item.category ||
+      item.selectedCategory ||
+      item.categoryName ||
+      item.focus ||
+      item.type ||
+      item.kind ||
+      'Discovery'
+    );
+  }
+
+  function getTitle(item, fallback) {
+    return (
+      item.title ||
+      item.heading ||
+      item.studyTitle ||
+      item.prompt ||
+      item.question ||
+      item.reference ||
+      item.passage ||
+      fallback
+    );
+  }
+
+  function normalizeStudy(item) {
+    const payload = item.payload && typeof item.payload === 'object' ? item.payload : item;
+    const category = getCategory(payload);
+    const title = getTitle(payload, `${category} Study`);
+    const createdAt = getCreatedAt(payload);
+
+    return {
+      id: payload.id || payload.uuid || createdAt + title,
+      title,
+      category,
+      createdAt,
+      text: textFrom(payload),
+      href: 'study.html'
+    };
+  }
+
+  function normalizeJournal(item) {
+    const payload = item.payload && typeof item.payload === 'object' ? item.payload : item;
+    const category = getCategory(payload);
+    const title = getTitle(payload, `${category} Journal`);
+    const createdAt = getCreatedAt(payload);
+
+    return {
+      id: payload.id || payload.uuid || createdAt + title,
+      title,
+      category,
+      createdAt,
+      text: textFrom(payload),
+      href: 'journal.html'
+    };
+  }
+
+  function dedupeItems(items) {
+    const seen = new Set();
+
+    return items.filter((item) => {
+      const key = [
+        item.id || '',
+        item.title || '',
+        item.createdAt || '',
+        item.text || ''
+      ].join('|');
+
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function sortNewest(items) {
+    return items.sort((a, b) => {
+      const aTime = new Date(a.createdAt).getTime() || 0;
+      const bTime = new Date(b.createdAt).getTime() || 0;
+      return bTime - aTime;
+    });
+  }
+
+  function formatDate(value) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderList(containerId, loadingId, items, emptyMessage) {
+    const container = byId(containerId);
+    const loading = byId(loadingId);
+
+    if (!container) return;
+
+    if (loading) {
+      loading.style.display = 'none';
+    }
+
+    container.innerHTML = '';
+
+    if (!items.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          ${escapeHtml(emptyMessage)}
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = items.slice(0, MAX_RECENT_ITEMS).map((item) => {
+      const date = formatDate(item.createdAt);
+      const title = escapeHtml(item.title || 'Untitled');
+      const category = escapeHtml(item.category || 'Discovery');
+      const text = escapeHtml(item.text || 'Saved RootedOS activity.');
+      const href = escapeHtml(item.href || '#');
+
+      return `
+        <a class="account-item" href="${href}">
+          <div class="item-topline">
+            <div class="item-title">${title}</div>
+            <div class="item-date">${date}</div>
+          </div>
+          <div class="item-meta">${category}</div>
+          <div class="item-text">${text}</div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function setText(id, value) {
+    const element = byId(id);
+    if (element) element.textContent = value;
+  }
+
+  function setError(message) {
+    const error = byId('accountError');
+    if (!error) return;
+
+    if (!message) {
+      error.textContent = '';
+      error.classList.remove('is-visible');
+      return;
+    }
+
+    error.textContent = message;
+    error.classList.add('is-visible');
+  }
+
+  function getLocalStudies() {
+    const raw = readStorageArray([
+      'rootedos_recent_studies',
+      'rootedos_studies',
+      'rootedos_saved_studies',
+      'rootedosStudyHistory',
+      'recentStudies',
+      'savedStudies',
+      'studyHistory'
+    ]);
+
+    return raw.map(normalizeStudy);
+  }
+
+  function getLocalJournalEntries() {
+    const raw = readStorageArray([
+      'rootedos_journal',
+      'rootedos_journal_entries',
+      'rootedosJournal',
+      'rootedosJournalEntries',
+      'journalEntries',
+      'savedJournalEntries'
+    ]);
+
+    return raw.map(normalizeJournal);
+  }
+
+  function getCategoriesExplored(studies, journals) {
+    const categories = new Set();
+
+    [...studies, ...journals].forEach((item) => {
+      if (item.category) categories.add(String(item.category).toLowerCase());
+    });
+
+    return categories.size;
+  }
+
+  function getActiveDays(studies, journals) {
+    const days = new Set();
+
+    [...studies, ...journals].forEach((item) => {
+      const date = new Date(item.createdAt);
+      if (!Number.isNaN(date.getTime())) {
+        days.add(date.toISOString().slice(0, 10));
+      }
+    });
+
+    return days.size;
+  }
+
+  async function getAuthUser(client) {
+    if (!client || !client.auth || typeof client.auth.getUser !== 'function') {
+      return null;
+    }
+
+    const result = await client.auth.getUser();
+
+    if (result && result.data && result.data.user) {
+      return result.data.user;
+    }
+
+    return null;
+  }
+
+  async function queryFirstAvailableTable(client, tableOptions, userId) {
+    if (!client || !userId) return [];
+
+    for (const option of tableOptions) {
+      try {
+        let query = client
+          .from(option.table)
+          .select(option.select || '*')
+          .order(option.orderBy || 'created_at', { ascending: false })
+          .limit(25);
+
+        if (option.userColumn) {
+          query = query.eq(option.userColumn, userId);
+        }
+
+        if (option.kindColumn && option.kindValue) {
+          query = query.eq(option.kindColumn, option.kindValue);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && Array.isArray(data)) {
+          return data;
+        }
+      } catch {
+        // Try the next possible table shape.
+      }
+    }
+
+    return [];
+  }
+
+  async function getCloudStudies(client, userId) {
+    const rows = await queryFirstAvailableTable(client, [
+      {
+        table: 'rootedos_saves',
+        userColumn: 'user_id',
+        kindColumn: 'kind',
+        kindValue: 'study',
+        orderBy: 'created_at'
+      },
+      {
+        table: 'rootedos_studies',
+        userColumn: 'user_id',
+        orderBy: 'created_at'
+      },
+      {
+        table: 'studies',
+        userColumn: 'user_id',
+        orderBy: 'created_at'
+      }
+    ], userId);
+
+    return rows.map(normalizeStudy);
+  }
+
+  async function getCloudJournalEntries(client, userId) {
+    const rows = await queryFirstAvailableTable(client, [
+      {
+        table: 'rootedos_saves',
+        userColumn: 'user_id',
+        kindColumn: 'kind',
+        kindValue: 'journal',
+        orderBy: 'created_at'
+      },
+      {
+        table: 'rootedos_journal_entries',
+        userColumn: 'user_id',
+        orderBy: 'created_at'
+      },
+      {
+        table: 'journal_entries',
+        userColumn: 'user_id',
+        orderBy: 'created_at'
+      }
+    ], userId);
+
+    return rows.map(normalizeJournal);
+  }
+
+  function updateStats(studies, journals) {
+    setText('statStudies', String(studies.length));
+    setText('statJournal', String(journals.length));
+    setText('statCategories', String(getCategoriesExplored(studies, journals)));
+    setText('statStreak', String(getActiveDays(studies, journals)));
+  }
+
+  function updateStatusBlocks({ user, cloudStudies, cloudJournal, localStudies, localJournal }) {
+    const localCount = localStudies.length + localJournal.length;
+    const cloudCount = cloudStudies.length + cloudJournal.length;
+
+    setText(
+      'authStatusText',
+      user
+        ? `Signed in as ${user.email || 'your RootedOS account'}.`
+        : 'Not signed in yet. Local activity can still appear here from this browser.'
+    );
+
+    setText(
+      'cloudStatusText',
+      user
+        ? cloudCount
+          ? `${cloudCount} cloud item${cloudCount === 1 ? '' : 's'} found.`
+          : 'Signed in, but no cloud activity was found yet.'
+        : 'Cloud sync will activate after Supabase magic-link sign-in is working.'
+    );
+
+    setText(
+      'localStatusText',
+      localCount
+        ? `${localCount} local item${localCount === 1 ? '' : 's'} found in this browser.`
+        : 'No local saved activity was found in this browser yet.'
+    );
+  }
+
+  async function signOut() {
+    const client = getSupabaseClient();
+
+    if (client && client.auth && typeof client.auth.signOut === 'function') {
+      await client.auth.signOut();
+    }
+
+    window.location.reload();
+  }
+
+  async function initAccountDashboard() {
+    setError('');
+
+    const refreshButton = byId('accountRefreshButton');
+    const signOutButton = byId('accountSignOutButton');
+
+    if (refreshButton) {
+      refreshButton.onclick = initAccountDashboard;
+    }
+
+    if (signOutButton) {
+      signOutButton.onclick = signOut;
+    }
+
+    const localStudies = getLocalStudies();
+    const localJournal = getLocalJournalEntries();
+
+    let user = null;
+    let cloudStudies = [];
+    let cloudJournal = [];
+
+    const client = getSupabaseClient();
+
+    try {
+      user = await getAuthUser(client);
+
+      if (user) {
+        cloudStudies = await getCloudStudies(client, user.id);
+        cloudJournal = await getCloudJournalEntries(client, user.id);
+      }
+    } catch (error) {
+      setError('Account data loaded from this browser. Cloud sync could not be checked yet.');
+    }
+
+    const studies = sortNewest(dedupeItems([...cloudStudies, ...localStudies]));
+    const journals = sortNewest(dedupeItems([...cloudJournal, ...localJournal]));
+
+    const userPill = byId('accountUserPill');
+
+    if (userPill) {
+      userPill.innerHTML = user && user.email
+        ? `Signed in: <strong>${escapeHtml(user.email)}</strong>`
+        : 'Not signed in';
+    }
+
+    if (signOutButton) {
+      signOutButton.hidden = !user;
+    }
+
+    renderList(
+      'recentStudiesList',
+      'studiesLoading',
+      studies,
+      'No studies saved yet. Start a new discovery and save the study when you reach the study page.'
+    );
+
+    renderList(
+      'recentJournalList',
+      'journalLoading',
+      journals,
+      'No journal entries saved yet. Open the journal after a study and save your reflection.'
+    );
+
+    updateStats(studies, journals);
+
+    updateStatusBlocks({
+      user,
+      cloudStudies,
+      cloudJournal,
+      localStudies,
+      localJournal
+    });
+  }
+
+  window.RootedOSAccount = {
+    init: initAccountDashboard,
+    getLocalStudies,
+    getLocalJournalEntries
+  };
+})();
