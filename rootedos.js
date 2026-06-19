@@ -1629,16 +1629,96 @@ async function saveJournalEntryToCloudIfSignedIn(entry) {
     return null;
   }
 }
+
+  async function hydrateAuthUI() {
+  const authStatus = document.querySelector('[data-auth-status]');
+  const signedOutBlock = document.querySelector('[data-auth-signed-out]');
+  const signedInBlock = document.querySelector('[data-auth-signed-in]');
+  const emailInput = document.querySelector('[data-auth-email]');
+  const sendLinkButton = document.querySelector('[data-auth-send-link]');
+  const authMessage = document.querySelector('[data-auth-message]');
+  const emailDisplay = document.querySelector('[data-auth-email-display]');
+  const signOutButton = document.querySelector('[data-auth-signout]');
+
+  if (!authStatus || !window.RootedOSSupabase) return;
+
+  function setSignedOutState() {
+    authStatus.textContent = 'You are browsing as a guest.';
+    if (signedOutBlock) signedOutBlock.style.display = '';
+    if (signedInBlock) signedInBlock.style.display = 'none';
+  }
+
+  function setSignedInState(user) {
+    authStatus.textContent = 'You are signed in.';
+    if (signedOutBlock) signedOutBlock.style.display = 'none';
+    if (signedInBlock) signedInBlock.style.display = '';
+    if (emailDisplay) emailDisplay.textContent = user && user.email ? user.email : 'Signed in';
+  }
+
+  try {
+    const user = await window.RootedOSSupabase.getUser();
+
+    if (user) {
+      setSignedInState(user);
+    } else {
+      setSignedOutState();
+    }
+  } catch (error) {
+    setSignedOutState();
+  }
+
+  if (sendLinkButton) {
+    sendLinkButton.addEventListener('click', async function () {
+      const email = emailInput ? emailInput.value.trim() : '';
+
+      if (!email) {
+        if (authMessage) authMessage.textContent = 'Enter your email first.';
+        return;
+      }
+
+      sendLinkButton.disabled = true;
+      sendLinkButton.textContent = 'Sending…';
+
+      try {
+        await window.RootedOSSupabase.signInWithMagicLink(email);
+        if (authMessage) authMessage.textContent = 'Magic link sent. Check your email.';
+      } catch (error) {
+        if (authMessage) authMessage.textContent = 'Could not send magic link. Please try again.';
+      } finally {
+        sendLinkButton.disabled = false;
+        sendLinkButton.textContent = 'Send Magic Link';
+      }
+    });
+  }
+
+  if (signOutButton) {
+    signOutButton.addEventListener('click', async function () {
+      signOutButton.disabled = true;
+      signOutButton.textContent = 'Signing out…';
+
+      try {
+        await window.RootedOSSupabase.signOut();
+        setSignedOutState();
+      } catch (error) {
+        // keep current state
+      } finally {
+        signOutButton.disabled = false;
+        signOutButton.textContent = 'Sign Out';
+      }
+    });
+  }
+}
   
-  updateTopbarBrand();
-  applyCategoryTheme();
-  bindHomeOrbPanel();
-  hydrateInputPage();
-  hydrateQuestionPage();
-  hydrateTrailPage();
-  hydrateStudyPage();
-  hydrateJournalPage();
-  addCategoryToEyebrow();
+ updateTopbarBrand();
+applyCategoryTheme();
+bindHomeOrbPanel();
+hydrateInputPage();
+hydrateQuestionPage();
+hydrateTrailPage();
+hydrateStudyPage();
+hydrateJournalPage();
+hydrateAuthUI();
+addCategoryToEyebrow();
 
   window.RootedOS = {
     CATEGORY_META: CATEGORY_META,
