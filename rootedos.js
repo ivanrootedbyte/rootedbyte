@@ -12,9 +12,9 @@
       pills: ['Bible passage', 'Study question', 'Theme', 'Book chapter'],
       sampleInput: 'Romans 12 and renewing the mind',
       questions: [
-  { title: 'What do you want to understand more clearly in this passage?', options: ['Meaning', 'Context', 'Application'] },
-  { title: 'What feels most important in this passage right now?', options: ['Identity', 'Obedience', 'Transformation'] }
-]
+        { title: 'What do you want to understand more clearly in this passage?', options: ['Meaning', 'Context', 'Application'] },
+        { title: 'What feels most important in this passage right now?', options: ['Identity', 'Obedience', 'Transformation'] }
+      ]
     },
     culture: {
       title: 'Culture',
@@ -319,18 +319,18 @@
   function normalizeJournalEntry(entry) {
     return {
       id: entry.id || 'journal_' + Date.now(),
-      dateKey: entry.dateKey || todayKey(),
-      createdAt: entry.createdAt || new Date().toISOString(),
+      dateKey: entry.dateKey || entry.date_key || todayKey(),
+      createdAt: entry.createdAt || entry.created_at || new Date().toISOString(),
       source: entry.source || 'journal',
       category: entry.category || getActiveCategory(),
-      categoryTitle: entry.categoryTitle || getMeta().title,
+      categoryTitle: entry.categoryTitle || entry.category_title || getMeta().title,
       input: entry.input || '',
       theme: entry.theme || '',
-      studyTitle: entry.studyTitle || entry.title || 'Saved Reflection',
+      studyTitle: entry.studyTitle || entry.study_title || entry.title || 'Saved Reflection',
       text: entry.text || entry.content || '',
-      truthStatement: entry.truthStatement || '',
-      scriptureConnection: entry.scriptureConnection || 'Scripture reference required (not generated)',
-      biblicalParallel: entry.biblicalParallel || ''
+      truthStatement: entry.truthStatement || entry.truth_statement || '',
+      scriptureConnection: entry.scriptureConnection || entry.scripture_connection || 'Scripture reference required (not generated)',
+      biblicalParallel: entry.biblicalParallel || entry.biblical_parallel || ''
     };
   }
 
@@ -950,6 +950,7 @@
     const intro = document.querySelector('.page-title p');
     const trailItems = document.querySelectorAll('.trail-content');
     const continueButton = document.querySelector('.primary-btn');
+    const trailStatus = document.querySelector('[data-trail-status]');
     const state = getStoredTrail();
     const meta = getMeta();
     const theme = ensureTheme(state) || 'Truth Trail Theme';
@@ -962,6 +963,7 @@
     if (eyebrow) eyebrow.textContent = meta.title + ' • Truth Trail Map';
     if (title) title.textContent = 'A journey, not a reply.';
     if (intro) intro.textContent = 'Your pathway moves from a real starting point toward a core theme, a Biblical parallel, a Scripture connection, and a truth statement.';
+    if (trailStatus) trailStatus.textContent = 'Building your trail…';
 
     function renderTrail(labels) {
       trailItems.forEach(function (item, index) {
@@ -1024,7 +1026,16 @@
     });
 
     generateTrailMap(meta).then(function (generated) {
-      if (!generated) return;
+      if (!generated) {
+        if (trailStatus) {
+          trailStatus.textContent = 'Using a grounded fallback trail for now.';
+        }
+        return;
+      }
+
+      if (trailStatus) {
+        trailStatus.textContent = 'Trail ready.';
+      }
 
       const actualLabels = [
         { title: 'Starting Point', text: generated.startingPoint || state.input || meta.sampleInput },
@@ -1142,260 +1153,271 @@
   }
 
   function hydrateStudyPage() {
-      const eyebrow = document.querySelector('.eyebrow');
-  const pageTitle = document.querySelector('.page-title h1');
-  const pageIntro = document.querySelector('.page-title p');
-  const sections = document.querySelectorAll('.study-section');
-  const state = getStoredTrail();
-  const meta = getMeta();
-  const theme = ensureTheme(state) || 'Truth Trail Theme';
-  const support = themeSupport(theme, getActiveCategory());
+    const eyebrow = document.querySelector('.eyebrow');
+    const pageTitle = document.querySelector('.page-title h1');
+    const pageIntro = document.querySelector('.page-title p');
+    const studyBuildStatus = document.querySelector('[data-study-build-status]');
+    const sections = document.querySelectorAll('.study-section');
+    const state = getStoredTrail();
+    const meta = getMeta();
+    const theme = ensureTheme(state) || 'Truth Trail Theme';
+    const support = themeSupport(theme, getActiveCategory());
 
-  if (!sections.length) return;
+    if (!sections.length) return;
 
-  applyCategoryTheme();
+    applyCategoryTheme();
 
-  if (eyebrow) eyebrow.textContent = meta.title + ' • Study Builder';
-  if (pageTitle) pageTitle.textContent = 'Turn discovery into a guide.';
-  if (pageIntro) pageIntro.textContent = 'This output is shaped for easy reading, small groups, personal reflection, and future Bible study building.';
+    if (eyebrow) eyebrow.textContent = meta.title + ' • Study Builder';
+    if (pageTitle) pageTitle.textContent = 'Turn discovery into a guide.';
+    if (pageIntro) pageIntro.textContent = 'This output is shaped for easy reading, small groups, personal reflection, and future Bible study building.';
+    if (studyBuildStatus) studyBuildStatus.textContent = 'Building your study output…';
 
-  const primary = sections[0];
-  const secondary = sections[1];
+    const primary = sections[0];
+    const secondary = sections[1];
 
-  const primaryTitle = primary.querySelector('h2');
-  const primaryParagraphs = primary.querySelectorAll('.muted');
-  const primaryLists = primary.querySelectorAll('ul');
-  const primaryHeadings = primary.querySelectorAll('h3');
-  const tag = primary.querySelector('.scripture-tag');
+    const primaryTitle = primary.querySelector('h2');
+    const primaryParagraphs = primary.querySelectorAll('.muted');
+    const primaryLists = primary.querySelectorAll('ul');
+    const primaryHeadings = primary.querySelectorAll('h3');
+    const tag = primary.querySelector('.scripture-tag');
 
-  if (tag) tag.textContent = 'Scripture reference required (not generated)';
-  if (primaryTitle) primaryTitle.textContent = state.studyTitle || support.studyTitle;
+    if (tag) tag.textContent = 'Scripture reference required (not generated)';
+    if (primaryTitle) primaryTitle.textContent = state.studyTitle || support.studyTitle;
 
-  if (primaryHeadings[0]) primaryHeadings[0].textContent = 'Main Theme';
-  if (primaryParagraphs[0]) primaryParagraphs[0].textContent = theme;
+    if (primaryHeadings[0]) primaryHeadings[0].textContent = 'Main Theme';
+    if (primaryParagraphs[0]) primaryParagraphs[0].textContent = theme;
 
-  if (primaryHeadings[1]) primaryHeadings[1].textContent = 'Key Scriptures';
-  if (primaryLists[0]) {
-    primaryLists[0].innerHTML = '<li>Scripture reference required (not generated)</li>';
-  }
-
-  const bridgesHeading = document.createElement('h3');
-  bridgesHeading.textContent = 'Scripture Bridges';
-  bridgesHeading.setAttribute('data-bridges', 'true');
-
-  const bridgesList = document.createElement('ul');
-  bridgesList.innerHTML = '<li>Old Testament connection: add only when a clear related passage is verified.</li><li>New Testament connection: add only when a clear related passage is verified.</li><li>Related theme or story bridge: do not force parallels if they are not present.</li>';
-
-  if (primaryHeadings[2]) primaryHeadings[2].textContent = 'Exegesis / Context';
-  if (primaryParagraphs[1]) {
-    primaryParagraphs[1].textContent = 'Explain what the chosen passage means in context using clear, age-appropriate language. Keep it simple, grounded, and easy to follow.';
-  }
-
-  const truthHeading = document.createElement('h3');
-  truthHeading.textContent = 'Truth Statement';
-
-  const truthParagraph = document.createElement('p');
-  truthParagraph.className = 'muted';
-  truthParagraph.textContent = state.truthStatement || support.truth;
-
-  if (!primary.querySelector('[data-bridges]')) {
-    primary.appendChild(bridgesHeading);
-    primary.appendChild(bridgesList);
-    primary.appendChild(truthHeading);
-    primary.appendChild(truthParagraph);
-  }
-
-  const secondaryHeadings = secondary.querySelectorAll('h3');
-  const secondaryLists = secondary.querySelectorAll('ul');
-  const secondaryParagraph = secondary.querySelector('.muted');
-  const shareButton = secondary.querySelector('.ghost-btn');
-
-  if (secondaryHeadings[0]) secondaryHeadings[0].textContent = 'Discussion Questions';
-  if (secondaryLists[0]) {
-    secondaryLists[0].innerHTML = '<li>What part of the starting point felt most real to you?</li><li>How did the core theme become clearer through the trail?</li><li>Where do you see this theme in everyday life?</li><li>What is one response step this truth invites this week?</li>';
-  }
-
-  if (secondaryHeadings[1]) secondaryHeadings[1].textContent = 'Reflection Prompts';
-  if (secondaryLists[1]) {
-    secondaryLists[1].innerHTML = '<li>Write one honest sentence about what this theme reveals in you.</li><li>Name one truth you need to remember this week.</li><li>What question do you still want Scripture to answer more clearly?</li>';
-  }
-
-  if (secondaryHeadings[2]) secondaryHeadings[2].textContent = 'Prayer Section';
-  if (secondaryParagraph) {
-    secondaryParagraph.textContent = 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
-  }
-
-  if (shareButton) {
-    shareButton.textContent = 'Preview Sharing →';
-  }
-
-  setStudySession({
-    category: getActiveCategory(),
-    categoryTitle: meta.title,
-    input: state.input || meta.sampleInput,
-    theme: theme,
-    biblicalParallel: state.biblicalParallel || support.parallel,
-    scriptureConnection: 'Scripture reference required (not generated)',
-    truthStatement: state.truthStatement || support.truth,
-    studyTitle: state.studyTitle || support.studyTitle,
-    studyOutput: {
-      title: state.studyTitle || support.studyTitle,
-      mainTheme: theme,
-      keyScriptures: ['Scripture reference required (not generated)'],
-      exegesisContext: primaryParagraphs[1] ? primaryParagraphs[1].textContent : '',
-      scriptureBridges: [
-        'Old Testament connection: add only when a clear related passage is verified.',
-        'New Testament connection: add only when a clear related passage is verified.'
-      ],
-      truthStatement: state.truthStatement || support.truth,
-      discussionQuestions: [
-        'What part of the starting point felt most real to you?',
-        'How did the core theme become clearer through the trail?',
-        'Where do you see this theme in everyday life?',
-        'What is one response step this truth invites this week?'
-      ],
-      reflectionPrompts: [
-        'Write one honest sentence about what this theme reveals in you.',
-        'Name one truth you need to remember this week.',
-        'What question do you still want Scripture to answer more clearly?'
-      ],
-      prayer: 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.',
-      slideOutline: [
-        'Slide 1: Study title',
-        'Slide 2: Starting point and category',
-        'Slide 3: Core theme',
-        'Slide 4: Scripture connection',
-        'Slide 5: Truth statement',
-        'Slide 6: Reflection and prayer'
-      ]
-    }
-  });
-
-  generateStudyOutput(meta).then(function (generated) {
-    if (!generated) return;
-
-    if (primaryTitle) primaryTitle.textContent = generated.studyTitle || state.studyTitle || support.studyTitle;
-    if (primaryParagraphs[0]) primaryParagraphs[0].textContent = generated.mainTheme || theme;
-
+    if (primaryHeadings[1]) primaryHeadings[1].textContent = 'Key Scriptures';
     if (primaryLists[0]) {
       primaryLists[0].innerHTML = '<li>Scripture reference required (not generated)</li>';
     }
 
+    const bridgesHeading = document.createElement('h3');
+    bridgesHeading.textContent = 'Scripture Bridges';
+    bridgesHeading.setAttribute('data-bridges', 'true');
+
+    const bridgesList = document.createElement('ul');
+    bridgesList.innerHTML = '<li>Old Testament connection: add only when a clear related passage is verified.</li><li>New Testament connection: add only when a clear related passage is verified.</li><li>Related theme or story bridge: do not force parallels if they are not present.</li>';
+
+    if (primaryHeadings[2]) primaryHeadings[2].textContent = 'Exegesis / Context';
     if (primaryParagraphs[1]) {
-      primaryParagraphs[1].textContent = generated.exegesisContext || 'Explain what the chosen passage means in context using clear, age-appropriate language.';
+      primaryParagraphs[1].textContent = 'Explain what the chosen passage means in context using clear, age-appropriate language. Keep it simple, grounded, and easy to follow.';
     }
 
+    const truthHeading = document.createElement('h3');
+    truthHeading.textContent = 'Truth Statement';
+
+    const truthParagraph = document.createElement('p');
+    truthParagraph.className = 'muted';
     truthParagraph.textContent = state.truthStatement || support.truth;
 
+    if (!primary.querySelector('[data-bridges]')) {
+      primary.appendChild(bridgesHeading);
+      primary.appendChild(bridgesList);
+      primary.appendChild(truthHeading);
+      primary.appendChild(truthParagraph);
+    }
+
+    const secondaryHeadings = secondary.querySelectorAll('h3');
+    const secondaryLists = secondary.querySelectorAll('ul');
+    const secondaryParagraph = secondary.querySelector('.muted');
+    const shareButton = secondary.querySelector('.ghost-btn');
+
+    if (secondaryHeadings[0]) secondaryHeadings[0].textContent = 'Discussion Questions';
     if (secondaryLists[0]) {
-      const discussionItems = (generated.discussionQuestions && generated.discussionQuestions.length)
-        ? generated.discussionQuestions
-        : [
-            'What part of the starting point felt most real to you?',
-            'How did the core theme become clearer through the trail?',
-            'Where do you see this theme in everyday life?',
-            'What is one response step this truth invites this week?'
-          ];
-
-      secondaryLists[0].innerHTML = discussionItems
-        .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
-        .join('');
+      secondaryLists[0].innerHTML = '<li>What part of the starting point felt most real to you?</li><li>How did the core theme become clearer through the trail?</li><li>Where do you see this theme in everyday life?</li><li>What is one response step this truth invites this week?</li>';
     }
 
+    if (secondaryHeadings[1]) secondaryHeadings[1].textContent = 'Reflection Prompts';
     if (secondaryLists[1]) {
-      const reflectionItems = (generated.reflectionPrompts && generated.reflectionPrompts.length)
-        ? generated.reflectionPrompts
-        : [
-            'Write one honest sentence about what this theme reveals in you.',
-            'Name one truth you need to remember this week.',
-            'What question do you still want Scripture to answer more clearly?'
-          ];
-
-      secondaryLists[1].innerHTML = reflectionItems
-        .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
-        .join('');
+      secondaryLists[1].innerHTML = '<li>Write one honest sentence about what this theme reveals in you.</li><li>Name one truth you need to remember this week.</li><li>What question do you still want Scripture to answer more clearly?</li>';
     }
 
+    if (secondaryHeadings[2]) secondaryHeadings[2].textContent = 'Prayer Section';
     if (secondaryParagraph) {
-      secondaryParagraph.textContent = generated.prayer || 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
+      secondaryParagraph.textContent = 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
     }
 
-    setStoredTrail({
-      studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle
-    });
+    if (shareButton) {
+      shareButton.textContent = 'Preview Sharing →';
+    }
 
     setStudySession({
       category: getActiveCategory(),
       categoryTitle: meta.title,
       input: state.input || meta.sampleInput,
-      theme: generated.mainTheme || theme,
+      theme: theme,
       biblicalParallel: state.biblicalParallel || support.parallel,
       scriptureConnection: 'Scripture reference required (not generated)',
       truthStatement: state.truthStatement || support.truth,
-      studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle,
+      studyTitle: state.studyTitle || support.studyTitle,
       studyOutput: {
-        title: generated.studyTitle || state.studyTitle || support.studyTitle,
-        mainTheme: generated.mainTheme || theme,
+        title: state.studyTitle || support.studyTitle,
+        mainTheme: theme,
         keyScriptures: ['Scripture reference required (not generated)'],
-        exegesisContext: generated.exegesisContext || '',
+        exegesisContext: primaryParagraphs[1] ? primaryParagraphs[1].textContent : '',
         scriptureBridges: [
           'Old Testament connection: add only when a clear related passage is verified.',
           'New Testament connection: add only when a clear related passage is verified.'
         ],
         truthStatement: state.truthStatement || support.truth,
-        discussionQuestions: generated.discussionQuestions || [],
-        reflectionPrompts: generated.reflectionPrompts || [],
-        prayer: generated.prayer || '',
-        slideOutline: generated.slideOutline || []
+        discussionQuestions: [
+          'What part of the starting point felt most real to you?',
+          'How did the core theme become clearer through the trail?',
+          'Where do you see this theme in everyday life?',
+          'What is one response step this truth invites this week?'
+        ],
+        reflectionPrompts: [
+          'Write one honest sentence about what this theme reveals in you.',
+          'Name one truth you need to remember this week.',
+          'What question do you still want Scripture to answer more clearly?'
+        ],
+        prayer: 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.',
+        slideOutline: [
+          'Slide 1: Study title',
+          'Slide 2: Starting point and category',
+          'Slide 3: Core theme',
+          'Slide 4: Scripture connection',
+          'Slide 5: Truth statement',
+          'Slide 6: Reflection and prayer'
+        ]
       }
     });
 
-    saveStudySessionToCloudIfSignedIn();
-  });
+    generateStudyOutput(meta).then(function (generated) {
+      if (!generated) {
+        if (studyBuildStatus) {
+          studyBuildStatus.textContent = 'Using a grounded fallback study output for now.';
+        }
+        return;
+      }
 
-  const saveStudyBtn = document.querySelector('[data-save-study-journal]');
-  const saveStudyStatus = document.querySelector('[data-study-save-status]');
+      if (studyBuildStatus) {
+        studyBuildStatus.textContent = 'Study output ready.';
+      }
 
-  if (saveStudyBtn) {
-    saveStudyBtn.addEventListener('click', function (event) {
-      event.preventDefault();
+      if (primaryTitle) primaryTitle.textContent = generated.studyTitle || state.studyTitle || support.studyTitle;
+      if (primaryParagraphs[0]) primaryParagraphs[0].textContent = generated.mainTheme || theme;
 
-      const freshState = getStoredTrail();
-      const freshTheme = ensureTheme(freshState) || theme || 'Truth Trail Theme';
-      const freshSupport = themeSupport(freshTheme, getActiveCategory());
-      const freshMeta = getMeta();
+      if (primaryLists[0]) {
+        primaryLists[0].innerHTML = '<li>Scripture reference required (not generated)</li>';
+      }
 
-      const entry = normalizeJournalEntry({
-        id: 'study_' + Date.now(),
-        dateKey: todayKey(),
-        createdAt: new Date().toISOString(),
-        source: 'study',
-        category: getActiveCategory(),
-        categoryTitle: freshMeta.title,
-        input: freshState.input || freshMeta.sampleInput || '',
-        theme: freshTheme,
-        studyTitle: freshState.studyTitle || freshSupport.studyTitle || 'Saved Study',
-        text: buildStudyJournalText(freshState, freshMeta, freshTheme, freshSupport),
-        truthStatement: freshState.truthStatement || freshSupport.truth,
-        scriptureConnection: 'Scripture reference required (not generated)',
-        biblicalParallel: freshState.biblicalParallel || freshSupport.parallel
+      if (primaryParagraphs[1]) {
+        primaryParagraphs[1].textContent = generated.exegesisContext || 'Explain what the chosen passage means in context using clear, age-appropriate language.';
+      }
+
+      truthParagraph.textContent = state.truthStatement || support.truth;
+
+      if (secondaryLists[0]) {
+        const discussionItems = (generated.discussionQuestions && generated.discussionQuestions.length)
+          ? generated.discussionQuestions
+          : [
+              'What part of the starting point felt most real to you?',
+              'How did the core theme become clearer through the trail?',
+              'Where do you see this theme in everyday life?',
+              'What is one response step this truth invites this week?'
+            ];
+
+        secondaryLists[0].innerHTML = discussionItems
+          .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
+          .join('');
+      }
+
+      if (secondaryLists[1]) {
+        const reflectionItems = (generated.reflectionPrompts && generated.reflectionPrompts.length)
+          ? generated.reflectionPrompts
+          : [
+              'Write one honest sentence about what this theme reveals in you.',
+              'Name one truth you need to remember this week.',
+              'What question do you still want Scripture to answer more clearly?'
+            ];
+
+        secondaryLists[1].innerHTML = reflectionItems
+          .map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; })
+          .join('');
+      }
+
+      if (secondaryParagraph) {
+        secondaryParagraph.textContent = generated.prayer || 'Prayer should stay simple, honest, and grounded in verified Scripture once passages are confirmed.';
+      }
+
+      setStoredTrail({
+        studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle
       });
-
-      saveJournalEntry(entry);
-      saveJournalEntryToCloudIfSignedIn(entry);
-      saveStudySessionToCloudIfSignedIn();
 
       setStudySession({
-        savedJournalId: entry.id
+        category: getActiveCategory(),
+        categoryTitle: meta.title,
+        input: state.input || meta.sampleInput,
+        theme: generated.mainTheme || theme,
+        biblicalParallel: state.biblicalParallel || support.parallel,
+        scriptureConnection: 'Scripture reference required (not generated)',
+        truthStatement: state.truthStatement || support.truth,
+        studyTitle: generated.studyTitle || state.studyTitle || support.studyTitle,
+        studyOutput: {
+          title: generated.studyTitle || state.studyTitle || support.studyTitle,
+          mainTheme: generated.mainTheme || theme,
+          keyScriptures: ['Scripture reference required (not generated)'],
+          exegesisContext: generated.exegesisContext || '',
+          scriptureBridges: [
+            'Old Testament connection: add only when a clear related passage is verified.',
+            'New Testament connection: add only when a clear related passage is verified.'
+          ],
+          truthStatement: state.truthStatement || support.truth,
+          discussionQuestions: generated.discussionQuestions || [],
+          reflectionPrompts: generated.reflectionPrompts || [],
+          prayer: generated.prayer || '',
+          slideOutline: generated.slideOutline || []
+        }
       });
 
-      if (saveStudyStatus) {
-        saveStudyStatus.textContent = 'Study saved to Journal locally on this device.';
-      }
-
-      saveStudyBtn.textContent = 'Saved to Journal ✓';
+      saveStudySessionToCloudIfSignedIn();
     });
-  }
+
+    const saveStudyBtn = document.querySelector('[data-save-study-journal]');
+    const saveStudyStatus = document.querySelector('[data-study-save-status]');
+
+    if (saveStudyBtn) {
+      saveStudyBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+
+        const freshState = getStoredTrail();
+        const freshTheme = ensureTheme(freshState) || theme || 'Truth Trail Theme';
+        const freshSupport = themeSupport(freshTheme, getActiveCategory());
+        const freshMeta = getMeta();
+
+        const entry = normalizeJournalEntry({
+          id: 'study_' + Date.now(),
+          dateKey: todayKey(),
+          createdAt: new Date().toISOString(),
+          source: 'study',
+          category: getActiveCategory(),
+          categoryTitle: freshMeta.title,
+          input: freshState.input || freshMeta.sampleInput || '',
+          theme: freshTheme,
+          studyTitle: freshState.studyTitle || freshSupport.studyTitle || 'Saved Study',
+          text: buildStudyJournalText(freshState, freshMeta, freshTheme, freshSupport),
+          truthStatement: freshState.truthStatement || freshSupport.truth,
+          scriptureConnection: 'Scripture reference required (not generated)',
+          biblicalParallel: freshState.biblicalParallel || freshSupport.parallel
+        });
+
+        saveJournalEntry(entry);
+        saveJournalEntryToCloudIfSignedIn(entry);
+        saveStudySessionToCloudIfSignedIn();
+
+        setStudySession({
+          savedJournalId: entry.id
+        });
+
+        if (saveStudyStatus) {
+          saveStudyStatus.textContent = 'Study saved. It is available in Journal and will sync to cloud when signed in.';
+        }
+
+        saveStudyBtn.textContent = 'Saved to Journal ✓';
+      });
+    }
   }
 
   function hydrateJournalPage() {
@@ -1409,6 +1431,8 @@
     const state = getStoredTrail();
     const category = getActiveCategory();
 
+    let cloudJournalEntries = [];
+
     if (!textarea) return;
 
     applyCategoryTheme();
@@ -1420,11 +1444,41 @@
       setStoredTrail({ journalDraft: textarea.value });
     });
 
+    async function refreshCloudJournalEntries() {
+      try {
+        if (!window.RootedOSSupabase) return [];
+        const user = await window.RootedOSSupabase.getUser();
+        if (!user) return [];
+        const rows = await window.RootedOSSupabase.fetchJournalEntriesCloud();
+        cloudJournalEntries = Array.isArray(rows) ? rows.map(normalizeJournalEntry) : [];
+        return cloudJournalEntries;
+      } catch (error) {
+        cloudJournalEntries = [];
+        return [];
+      }
+    }
+
+    function getMergedJournalEntries() {
+      const localEntries = getJournalEntries().map(normalizeJournalEntry);
+      const mergedMap = new Map();
+
+      [...cloudJournalEntries, ...localEntries].forEach(function (entry) {
+        const key = entry.id || (entry.createdAt + '|' + entry.studyTitle + '|' + entry.text);
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, entry);
+        }
+      });
+
+      return Array.from(mergedMap.values()).sort(function (a, b) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    }
+
     function renderCalendarPills(activeDateKey) {
       if (!calendarGrid) return;
 
       const days = buildCalendarWindow();
-      const entries = getJournalEntries().map(normalizeJournalEntry);
+      const entries = getMergedJournalEntries();
 
       calendarGrid.innerHTML = days.map(function (day) {
         const count = entries.filter(function (entry) {
@@ -1465,7 +1519,8 @@
           : 'Showing all saved entries.';
       }
 
-      const entries = getJournalEntries().map(normalizeJournalEntry);
+      const entries = getMergedJournalEntries();
+
       const filtered = filterDate
         ? entries.filter(function (entry) {
             return entry.dateKey === filterDate;
@@ -1491,14 +1546,10 @@
               '<span class="pill">' + escapeHTML(entry.categoryTitle || 'Life Questions') + '</span>' +
               '<span class="pill">' + escapeHTML(dateLabel(entry.dateKey)) + '</span>' +
             '</div>' +
-
             '<h2>' + escapeHTML(entry.studyTitle || 'Saved Reflection') + '</h2>' +
-
             '<p class="muted"><strong>Starting Point:</strong> ' + escapeHTML(entry.input || 'None') + '</p>' +
             '<p class="muted"><strong>Theme:</strong> ' + escapeHTML(entry.theme || 'None') + '</p>' +
-
             '<div style="white-space:pre-wrap;margin-top:16px;">' + escapeHTML(entry.text || '') + '</div>' +
-
             '<div class="pill-row" style="margin-top:18px;">' +
               '<button class="ghost-btn" type="button" data-delete-journal="' + escapeHTML(entry.id) + '">Delete</button>' +
             '</div>' +
@@ -1507,7 +1558,7 @@
       }).join('');
 
       list.querySelectorAll('[data-delete-journal]').forEach(function (button) {
-        button.addEventListener('click', function () {
+        button.addEventListener('click', async function () {
           const id = button.getAttribute('data-delete-journal');
 
           const nextEntries = getJournalEntries().filter(function (entry) {
@@ -1516,7 +1567,22 @@
 
           setJournalEntries(nextEntries);
 
-          if (status) status.textContent = 'Entry deleted locally.';
+          try {
+            if (
+              window.RootedOSSupabase &&
+              id &&
+              !String(id).startsWith('journal_') &&
+              !String(id).startsWith('study_')
+            ) {
+              await window.RootedOSSupabase.deleteJournalEntryCloud(id);
+            }
+          } catch (error) {
+            // keep local delete even if cloud delete fails
+          }
+
+          await refreshCloudJournalEntries();
+
+          if (status) status.textContent = 'Entry deleted.';
 
           renderCalendarPills(filterDate || '');
           renderEntries(filterDate);
@@ -1558,10 +1624,14 @@
         setStoredTrail({ journalDraft: '' });
         textarea.value = '';
 
-        if (status) status.textContent = 'Journal saved locally on this device.';
+        if (status) status.textContent = 'Journal saved. It will sync to cloud when signed in.';
 
-        renderCalendarPills(todayKey());
-        renderEntries(todayKey());
+        saveJournalEntryToCloudIfSignedIn(entry).finally(function () {
+          refreshCloudJournalEntries().finally(function () {
+            renderCalendarPills(todayKey());
+            renderEntries(todayKey());
+          });
+        });
       });
     }
 
@@ -1573,8 +1643,10 @@
       });
     }
 
-    renderCalendarPills(todayKey());
-    renderEntries(todayKey());
+    refreshCloudJournalEntries().finally(function () {
+      renderCalendarPills(todayKey());
+      renderEntries(todayKey());
+    });
   }
 
   function addCategoryToEyebrow() {
@@ -1589,141 +1661,141 @@
   }
 
   async function getCloudUserSafe() {
-  try {
-    if (!window.RootedOSSupabase) return null;
-    return await window.RootedOSSupabase.getUser();
-  } catch (error) {
-    return null;
-  }
-}
-
-async function saveStudySessionToCloudIfSignedIn() {
-  try {
-    if (!window.RootedOSSupabase) return null;
-
-    const user = await window.RootedOSSupabase.getUser();
-    if (!user) return null;
-
-    const session = getStudySession();
-    const saved = await window.RootedOSSupabase.saveStudySession(session);
-
-    if (saved && saved.id) {
-      setStudySession({ cloudId: saved.id });
+    try {
+      if (!window.RootedOSSupabase) return null;
+      return await window.RootedOSSupabase.getUser();
+    } catch (error) {
+      return null;
     }
-
-    return saved;
-  } catch (error) {
-    return null;
   }
-}
 
-async function saveJournalEntryToCloudIfSignedIn(entry) {
-  try {
-    if (!window.RootedOSSupabase) return null;
+  async function saveStudySessionToCloudIfSignedIn() {
+    try {
+      if (!window.RootedOSSupabase) return null;
 
-    const user = await window.RootedOSSupabase.getUser();
-    if (!user) return null;
+      const user = await window.RootedOSSupabase.getUser();
+      if (!user) return null;
 
-    return await window.RootedOSSupabase.saveJournalEntryCloud(entry);
-  } catch (error) {
-    return null;
+      const session = getStudySession();
+      const saved = await window.RootedOSSupabase.saveStudySession(session);
+
+      if (saved && saved.id) {
+        setStudySession({ cloudId: saved.id });
+      }
+
+      return saved;
+    } catch (error) {
+      return null;
+    }
   }
-}
+
+  async function saveJournalEntryToCloudIfSignedIn(entry) {
+    try {
+      if (!window.RootedOSSupabase) return null;
+
+      const user = await window.RootedOSSupabase.getUser();
+      if (!user) return null;
+
+      return await window.RootedOSSupabase.saveJournalEntryCloud(entry);
+    } catch (error) {
+      return null;
+    }
+  }
 
   async function hydrateAuthUI() {
-  const authStatus = document.querySelector('[data-auth-status]');
-  const signedOutBlock = document.querySelector('[data-auth-signed-out]');
-  const signedInBlock = document.querySelector('[data-auth-signed-in]');
-  const emailInput = document.querySelector('[data-auth-email]');
-  const sendLinkButton = document.querySelector('[data-auth-send-link]');
-  const authMessage = document.querySelector('[data-auth-message]');
-  const emailDisplay = document.querySelector('[data-auth-email-display]');
-  const signOutButton = document.querySelector('[data-auth-signout]');
+    const authStatus = document.querySelector('[data-auth-status]');
+    const signedOutBlock = document.querySelector('[data-auth-signed-out]');
+    const signedInBlock = document.querySelector('[data-auth-signed-in]');
+    const emailInput = document.querySelector('[data-auth-email]');
+    const sendLinkButton = document.querySelector('[data-auth-send-link]');
+    const authMessage = document.querySelector('[data-auth-message]');
+    const emailDisplay = document.querySelector('[data-auth-email-display]');
+    const signOutButton = document.querySelector('[data-auth-signout]');
 
-  if (!authStatus || !window.RootedOSSupabase) return;
+    if (!authStatus || !window.RootedOSSupabase) return;
 
-  function setSignedOutState() {
-    authStatus.textContent = 'You are browsing as a guest.';
-    if (signedOutBlock) signedOutBlock.style.display = '';
-    if (signedInBlock) signedInBlock.style.display = 'none';
-  }
+    function setSignedOutState() {
+      authStatus.textContent = 'You are browsing as a guest.';
+      if (signedOutBlock) signedOutBlock.style.display = '';
+      if (signedInBlock) signedInBlock.style.display = 'none';
+    }
 
-  function setSignedInState(user) {
-    authStatus.textContent = 'You are signed in.';
-    if (signedOutBlock) signedOutBlock.style.display = 'none';
-    if (signedInBlock) signedInBlock.style.display = '';
-    if (emailDisplay) emailDisplay.textContent = user && user.email ? user.email : 'Signed in';
-  }
+    function setSignedInState(user) {
+      authStatus.textContent = 'You are signed in.';
+      if (signedOutBlock) signedOutBlock.style.display = 'none';
+      if (signedInBlock) signedInBlock.style.display = '';
+      if (emailDisplay) emailDisplay.textContent = user && user.email ? user.email : 'Signed in';
+    }
 
-  try {
-    const user = await window.RootedOSSupabase.getUser();
+    try {
+      const user = await window.RootedOSSupabase.getUser();
 
-    if (user) {
-      setSignedInState(user);
-    } else {
+      if (user) {
+        setSignedInState(user);
+      } else {
+        setSignedOutState();
+      }
+    } catch (error) {
       setSignedOutState();
     }
-  } catch (error) {
-    setSignedOutState();
-  }
 
-  if (sendLinkButton) {
-    sendLinkButton.addEventListener('click', async function () {
-      const email = emailInput ? emailInput.value.trim() : '';
+    if (sendLinkButton) {
+      sendLinkButton.addEventListener('click', async function () {
+        const email = emailInput ? emailInput.value.trim() : '';
 
-      if (!email) {
-        if (authMessage) authMessage.textContent = 'Enter your email first.';
-        return;
-      }
-
-      sendLinkButton.disabled = true;
-      sendLinkButton.textContent = 'Sending…';
-
-      try {
-        await window.RootedOSSupabase.signInWithMagicLink(email);
-        if (authMessage) authMessage.textContent = 'Magic link sent. Check your email.';
-            } catch (error) {
-        console.error('Magic link error:', error);
-        if (authMessage) {
-          authMessage.textContent = error && error.message
-            ? 'Magic link error: ' + error.message
-            : 'Could not send magic link. Please try again.';
+        if (!email) {
+          if (authMessage) authMessage.textContent = 'Enter your email first.';
+          return;
         }
-      } finally {
-        sendLinkButton.disabled = false;
-        sendLinkButton.textContent = 'Send Magic Link';
-      }
-    });
+
+        sendLinkButton.disabled = true;
+        sendLinkButton.textContent = 'Sending…';
+
+        try {
+          await window.RootedOSSupabase.signInWithMagicLink(email);
+          if (authMessage) authMessage.textContent = 'Magic link sent. Check your email.';
+        } catch (error) {
+          console.error('Magic link error:', error);
+          if (authMessage) {
+            authMessage.textContent = error && error.message
+              ? 'Magic link error: ' + error.message
+              : 'Could not send magic link. Please try again.';
+          }
+        } finally {
+          sendLinkButton.disabled = false;
+          sendLinkButton.textContent = 'Send Magic Link';
+        }
+      });
+    }
+
+    if (signOutButton) {
+      signOutButton.addEventListener('click', async function () {
+        signOutButton.disabled = true;
+        signOutButton.textContent = 'Signing out…';
+
+        try {
+          await window.RootedOSSupabase.signOut();
+          setSignedOutState();
+        } catch (error) {
+          // keep current state
+        } finally {
+          signOutButton.disabled = false;
+          signOutButton.textContent = 'Sign Out';
+        }
+      });
+    }
   }
 
-  if (signOutButton) {
-    signOutButton.addEventListener('click', async function () {
-      signOutButton.disabled = true;
-      signOutButton.textContent = 'Signing out…';
-
-      try {
-        await window.RootedOSSupabase.signOut();
-        setSignedOutState();
-      } catch (error) {
-        // keep current state
-      } finally {
-        signOutButton.disabled = false;
-        signOutButton.textContent = 'Sign Out';
-      }
-    });
-  }
-}
-  
- updateTopbarBrand();
-applyCategoryTheme();
-bindHomeOrbPanel();
-hydrateInputPage();
-hydrateQuestionPage();
-hydrateTrailPage();
-hydrateStudyPage();
-hydrateJournalPage();
-hydrateAuthUI();
-addCategoryToEyebrow();
+  updateTopbarBrand();
+  applyCategoryTheme();
+  bindHomeOrbPanel();
+  hydrateInputPage();
+  hydrateQuestionPage();
+  hydrateTrailPage();
+  hydrateStudyPage();
+  hydrateJournalPage();
+  hydrateAuthUI();
+  addCategoryToEyebrow();
 
   window.RootedOS = {
     CATEGORY_META: CATEGORY_META,
@@ -1744,7 +1816,6 @@ addCategoryToEyebrow();
 
 /* =========================================================
    RootedOS Account Dashboard Support
-   Safe add-on for account.html
    ========================================================= */
 
 (function () {
@@ -1763,62 +1834,10 @@ addCategoryToEyebrow();
     }
   }
 
-  function readStorageArray(keys) {
-    const output = [];
-
-    keys.forEach((key) => {
-      const localValue = safeJsonParse(localStorage.getItem(key), null);
-      const sessionValue = safeJsonParse(sessionStorage.getItem(key), null);
-
-      [localValue, sessionValue].forEach((value) => {
-        if (Array.isArray(value)) {
-          output.push(...value);
-        } else if (value && typeof value === 'object') {
-          output.push(value);
-        }
-      });
-    });
-
-    return output;
-  }
-
   function getSupabaseClient() {
-    if (window.RootedOSSupabase && window.RootedOSSupabase.client) {
-      return window.RootedOSSupabase.client;
+    if (window.RootedOSSupabase && typeof window.RootedOSSupabase.getClient === 'function') {
+      return window.RootedOSSupabase.getClient();
     }
-
-    if (window.rootedSupabase) {
-      return window.rootedSupabase;
-    }
-
-    if (window.supabaseClient) {
-      return window.supabaseClient;
-    }
-
-    if (
-      window.supabase &&
-      window.ROOTEDOS_PUBLIC_CONFIG &&
-      window.ROOTEDOS_PUBLIC_CONFIG.supabaseUrl &&
-      window.ROOTEDOS_PUBLIC_CONFIG.supabaseAnonKey
-    ) {
-      return window.supabase.createClient(
-        window.ROOTEDOS_PUBLIC_CONFIG.supabaseUrl,
-        window.ROOTEDOS_PUBLIC_CONFIG.supabaseAnonKey
-      );
-    }
-
-    if (
-      window.supabase &&
-      window.__PUBLIC_CONFIG__ &&
-      window.__PUBLIC_CONFIG__.supabaseUrl &&
-      window.__PUBLIC_CONFIG__.supabaseAnonKey
-    ) {
-      return window.supabase.createClient(
-        window.__PUBLIC_CONFIG__.supabaseUrl,
-        window.__PUBLIC_CONFIG__.supabaseAnonKey
-      );
-    }
-
     return null;
   }
 
@@ -1863,6 +1882,7 @@ addCategoryToEyebrow();
 
   function getCategory(item) {
     return (
+      item.category_title ||
       item.category ||
       item.selectedCategory ||
       item.categoryName ||
@@ -1875,6 +1895,7 @@ addCategoryToEyebrow();
 
   function getTitle(item, fallback) {
     return (
+      item.study_title ||
       item.title ||
       item.heading ||
       item.studyTitle ||
@@ -1889,15 +1910,34 @@ addCategoryToEyebrow();
   function normalizeStudy(item) {
     const payload = item.payload && typeof item.payload === 'object' ? item.payload : item;
     const category = getCategory(payload);
-    const title = getTitle(payload, `${category} Study`);
+    const title = getTitle(payload, category + ' Study');
     const createdAt = getCreatedAt(payload);
+
+    let text = '';
+
+    if (payload.study_output_json && typeof payload.study_output_json === 'object') {
+      text =
+        payload.study_output_json.exegesisContext ||
+        payload.study_output_json.prayer ||
+        (Array.isArray(payload.study_output_json.discussionQuestions)
+          ? payload.study_output_json.discussionQuestions.join(' ')
+          : '');
+    }
+
+    if (!text) {
+      text =
+        payload.truth_statement ||
+        payload.theme ||
+        payload.input ||
+        textFrom(payload);
+    }
 
     return {
       id: payload.id || payload.uuid || createdAt + title,
-      title,
-      category,
+      title: payload.study_title || title,
+      category: payload.category_title || category,
       createdAt,
-      text: textFrom(payload),
+      text: String(text || '').trim(),
       href: 'study.html'
     };
   }
@@ -1905,15 +1945,15 @@ addCategoryToEyebrow();
   function normalizeJournal(item) {
     const payload = item.payload && typeof item.payload === 'object' ? item.payload : item;
     const category = getCategory(payload);
-    const title = getTitle(payload, `${category} Journal`);
+    const title = getTitle(payload, category + ' Journal');
     const createdAt = getCreatedAt(payload);
 
     return {
       id: payload.id || payload.uuid || createdAt + title,
-      title,
-      category,
+      title: payload.study_title || payload.studyTitle || title,
+      category: payload.category_title || category,
       createdAt,
-      text: textFrom(payload),
+      text: textFrom(payload.text || payload),
       href: 'journal.html'
     };
   }
@@ -2027,30 +2067,24 @@ addCategoryToEyebrow();
   }
 
   function getLocalStudies() {
-    const raw = readStorageArray([
-      'rootedos_recent_studies',
-      'rootedos_studies',
-      'rootedos_saved_studies',
-      'rootedosStudyHistory',
-      'recentStudies',
-      'savedStudies',
-      'studyHistory'
-    ]);
+    const session = safeJsonParse(localStorage.getItem('rootedosStudySession'), null);
+    if (!session || typeof session !== 'object') return [];
 
-    return raw.map(normalizeStudy);
+    if (
+      !session.input &&
+      !session.studyTitle &&
+      !session.theme &&
+      !session.studyOutput
+    ) {
+      return [];
+    }
+
+    return [normalizeStudy(session)];
   }
 
   function getLocalJournalEntries() {
-    const raw = readStorageArray([
-      'rootedos_journal',
-      'rootedos_journal_entries',
-      'rootedosJournal',
-      'rootedosJournalEntries',
-      'journalEntries',
-      'savedJournalEntries'
-    ]);
-
-    return raw.map(normalizeJournal);
+    const raw = safeJsonParse(localStorage.getItem('rootedosJournalEntries'), []);
+    return Array.isArray(raw) ? raw.map(normalizeJournal) : [];
   }
 
   function getCategoriesExplored(studies, journals) {
@@ -2076,97 +2110,35 @@ addCategoryToEyebrow();
     return days.size;
   }
 
-  async function getAuthUser(client) {
+  async function getAuthUser(clientPromise) {
+    if (window.RootedOSSupabase && typeof window.RootedOSSupabase.getUser === 'function') {
+      return await window.RootedOSSupabase.getUser();
+    }
+
+    const client = await clientPromise;
     if (!client || !client.auth || typeof client.auth.getUser !== 'function') {
       return null;
     }
 
     const result = await client.auth.getUser();
-
-    if (result && result.data && result.data.user) {
-      return result.data.user;
-    }
-
-    return null;
+    return result && result.data ? result.data.user : null;
   }
 
-  async function queryFirstAvailableTable(client, tableOptions, userId) {
-    if (!client || !userId) return [];
-
-    for (const option of tableOptions) {
-      try {
-        let query = client
-          .from(option.table)
-          .select(option.select || '*')
-          .order(option.orderBy || 'created_at', { ascending: false })
-          .limit(25);
-
-        if (option.userColumn) {
-          query = query.eq(option.userColumn, userId);
-        }
-
-        if (option.kindColumn && option.kindValue) {
-          query = query.eq(option.kindColumn, option.kindValue);
-        }
-
-        const { data, error } = await query;
-
-        if (!error && Array.isArray(data)) {
-          return data;
-        }
-      } catch {
-        // Try the next possible table shape.
-      }
+  async function getCloudStudies(_clientPromise, _userId) {
+    if (!window.RootedOSSupabase || typeof window.RootedOSSupabase.fetchStudySessionsCloud !== 'function') {
+      return [];
     }
 
-    return [];
-  }
-
-  async function getCloudStudies(client, userId) {
-    const rows = await queryFirstAvailableTable(client, [
-      {
-        table: 'rootedos_saves',
-        userColumn: 'user_id',
-        kindColumn: 'kind',
-        kindValue: 'study',
-        orderBy: 'created_at'
-      },
-      {
-        table: 'rootedos_studies',
-        userColumn: 'user_id',
-        orderBy: 'created_at'
-      },
-      {
-        table: 'studies',
-        userColumn: 'user_id',
-        orderBy: 'created_at'
-      }
-    ], userId);
-
+    const rows = await window.RootedOSSupabase.fetchStudySessionsCloud();
     return rows.map(normalizeStudy);
   }
 
-  async function getCloudJournalEntries(client, userId) {
-    const rows = await queryFirstAvailableTable(client, [
-      {
-        table: 'rootedos_saves',
-        userColumn: 'user_id',
-        kindColumn: 'kind',
-        kindValue: 'journal',
-        orderBy: 'created_at'
-      },
-      {
-        table: 'rootedos_journal_entries',
-        userColumn: 'user_id',
-        orderBy: 'created_at'
-      },
-      {
-        table: 'journal_entries',
-        userColumn: 'user_id',
-        orderBy: 'created_at'
-      }
-    ], userId);
+  async function getCloudJournalEntries(_clientPromise, _userId) {
+    if (!window.RootedOSSupabase || typeof window.RootedOSSupabase.fetchJournalEntriesCloud !== 'function') {
+      return [];
+    }
 
+    const rows = await window.RootedOSSupabase.fetchJournalEntriesCloud();
     return rows.map(normalizeJournal);
   }
 
@@ -2184,7 +2156,7 @@ addCategoryToEyebrow();
     setText(
       'authStatusText',
       user
-        ? `Signed in as ${user.email || 'your RootedOS account'}.`
+        ? 'Signed in as ' + (user.email || 'your RootedOS account') + '.'
         : 'Not signed in yet. Local activity can still appear here from this browser.'
     );
 
@@ -2192,7 +2164,7 @@ addCategoryToEyebrow();
       'cloudStatusText',
       user
         ? cloudCount
-          ? `${cloudCount} cloud item${cloudCount === 1 ? '' : 's'} found.`
+          ? cloudCount + ' cloud item' + (cloudCount === 1 ? '' : 's') + ' found.'
           : 'Signed in, but no cloud activity was found yet.'
         : 'Cloud sync will activate after Supabase magic-link sign-in is working.'
     );
@@ -2200,18 +2172,15 @@ addCategoryToEyebrow();
     setText(
       'localStatusText',
       localCount
-        ? `${localCount} local item${localCount === 1 ? '' : 's'} found in this browser.`
+        ? localCount + ' local item' + (localCount === 1 ? '' : 's') + ' found in this browser.'
         : 'No local saved activity was found in this browser yet.'
     );
   }
 
   async function signOut() {
-    const client = getSupabaseClient();
-
-    if (client && client.auth && typeof client.auth.signOut === 'function') {
-      await client.auth.signOut();
+    if (window.RootedOSSupabase && typeof window.RootedOSSupabase.signOut === 'function') {
+      await window.RootedOSSupabase.signOut();
     }
-
     window.location.reload();
   }
 
@@ -2236,27 +2205,27 @@ addCategoryToEyebrow();
     let cloudStudies = [];
     let cloudJournal = [];
 
-    const client = getSupabaseClient();
+    const clientPromise = getSupabaseClient();
 
     try {
-      user = await getAuthUser(client);
+      user = await getAuthUser(clientPromise);
 
       if (user) {
-        cloudStudies = await getCloudStudies(client, user.id);
-        cloudJournal = await getCloudJournalEntries(client, user.id);
+        cloudStudies = await getCloudStudies(clientPromise, user.id);
+        cloudJournal = await getCloudJournalEntries(clientPromise, user.id);
       }
     } catch (error) {
       setError('Account data loaded from this browser. Cloud sync could not be checked yet.');
     }
 
-    const studies = sortNewest(dedupeItems([...cloudStudies, ...localStudies]));
-    const journals = sortNewest(dedupeItems([...cloudJournal, ...localJournal]));
+    const studies = sortNewest(dedupeItems([].concat(cloudStudies, localStudies)));
+    const journals = sortNewest(dedupeItems([].concat(cloudJournal, localJournal)));
 
     const userPill = byId('accountUserPill');
 
     if (userPill) {
       userPill.innerHTML = user && user.email
-        ? `Signed in: <strong>${escapeHtml(user.email)}</strong>`
+        ? 'Signed in: <strong>' + escapeHtml(user.email) + '</strong>'
         : 'Not signed in';
     }
 
@@ -2291,7 +2260,7 @@ addCategoryToEyebrow();
 
   window.RootedOSAccount = {
     init: initAccountDashboard,
-    getLocalStudies,
-    getLocalJournalEntries
+    getLocalStudies: getLocalStudies,
+    getLocalJournalEntries: getLocalJournalEntries
   };
 })();
