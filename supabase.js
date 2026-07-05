@@ -1,6 +1,7 @@
 (function () {
   let clientPromise = null;
   let currentUser = null;
+  let authReadyPromise = null;
 
   async function getPublicConfig() {
     const response = await fetch('/api/public-config');
@@ -25,11 +26,23 @@
 
         const client = window.supabase.createClient(
           config.supabaseUrl,
-          config.supabaseAnonKey
+          config.supabaseAnonKey,
+          {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true
+            }
+          }
         );
 
-        const authResult = await client.auth.getUser();
-        currentUser = authResult && authResult.data ? authResult.data.user : null;
+        authReadyPromise = (async function () {
+          const sessionResult = await client.auth.getSession();
+          currentUser = sessionResult && sessionResult.data && sessionResult.data.session
+            ? sessionResult.data.session.user
+            : null;
+          return currentUser;
+        })();
 
         client.auth.onAuthStateChange(function (_event, session) {
           currentUser = session && session.user ? session.user : null;
@@ -42,15 +55,23 @@
     return clientPromise;
   }
 
-  async function getUser() {
+  async function waitForAuthReady() {
     await getClient();
+    if (authReadyPromise) {
+      await authReadyPromise;
+    }
+    return currentUser;
+  }
+
+  async function getUser() {
+    await waitForAuthReady();
     return currentUser;
   }
 
   async function signInWithMagicLink(email) {
     const client = await getClient();
 
-    const redirectTo = window.location.origin + '/journal.html';
+    const redirectTo = window.location.origin + '/account.html';
 
     const { error } = await client.auth.signInWithOtp({
       email: email,
@@ -72,6 +93,7 @@
     if (error) {
       throw error;
     }
+    currentUser = null;
     return true;
   }
 
@@ -179,6 +201,26 @@
     const { data, error } = await client
       .from('journal_entries')
       .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+  }
+
+  async function fetchStudySessionsCloud() {
+    const client = await getClient();
+    const user = await getUser();
+
+    if (!user) return [];
+
+    const { data, error } = await client
+      .from('study_sessions')
+      .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -197,7 +239,8 @@
     const { error } = await client
       .from('journal_entries')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
       throw error;
@@ -207,14 +250,16 @@
   }
 
   window.RootedOSSupabase = {
-    getClient: getClient,
-    getUser: getUser,
-    signInWithMagicLink: signInWithMagicLink,
-    signOut: signOut,
-    upsertProfile: upsertProfile,
-    saveStudySession: saveStudySession,
-    saveJournalEntryCloud: saveJournalEntryCloud,
-    fetchJournalEntriesCloud: fetchJournalEntriesCloud,
-    deleteJournalEntryCloud: deleteJournalEntryCloud
+    getClient,
+    getUser,
+    waitForAuthReady,
+    signInWithMagicLink,
+    signOut,
+    upsertProfile,
+    saveStudySession,
+    saveJournalEntryCloud,
+    fetchJournalEntriesCloud,
+    fetchStudySessionsCloud,
+    deleteJournalEntryCloud
   };
 })();
