@@ -8,8 +8,8 @@
   const CATEGORY_META = {
     word: {
       title: 'The Word',
-      desc: 'Begin directly from Scripture, a passage, or a Bible study question and let RootedOS build a guided trail toward reflection, understanding, and study output.',
-      pills: ['Bible passage', 'Study question', 'Theme', 'Book chapter'],
+      desc: 'Begin directly from Scripture, a passage, or a Bible study question and let RootedOS build a guided trail toward understanding, reflection, and study output.',
+      pills: ['Bible passage', 'Meaning', 'Context', 'Application'],
       sampleInput: 'Romans 12 and renewing the mind',
       questions: [
         { title: 'What do you want to understand more clearly in this passage?', options: ['Meaning', 'Context', 'Application'] },
@@ -18,27 +18,27 @@
     },
     culture: {
       title: 'Culture',
-      desc: 'Start with a cultural question, trend, worldview, identity struggle, or modern pressure, then follow the trail toward Biblical truth and a study-ready output.',
-      pills: ['Culture trend', 'Identity', 'Worldview', 'Modern pressure'],
+      desc: 'Start with a cultural question, trend, worldview, identity struggle, or modern pressure, then follow the trail toward grounded truth and a study-ready output.',
+      pills: ['Culture trend', 'Identity', 'Worldview', 'Pressure'],
       sampleInput: 'Why is comparison so normal online?',
       questions: [
-        { title: 'What pressure feels strongest?', options: ['Comparison', 'Approval', 'Performance'] },
+        { title: 'What pressure feels strongest here?', options: ['Comparison', 'Approval', 'Performance'] },
         { title: 'What sits underneath it?', options: ['Fear', 'Identity', 'Control'] }
       ]
     },
     movies: {
       title: 'Movies',
-      desc: 'Bring a movie, character, quote, or scene into the trail and uncover the deeper theme, the Biblical parallel, and the study path that follows.',
+      desc: 'Bring a movie, character, quote, or scene into the trail and uncover the deeper theme, the truth tension, and the study path that follows.',
       pills: ['Movie scene', 'Character', 'Quote', 'Story theme'],
       sampleInput: 'The Lord of the Rings - Mount Doom scene',
       questions: [
-        { title: 'What stood out most?', options: ['Temptation', 'Sacrifice', 'Courage'] },
+        { title: 'What stood out most in this scene?', options: ['Temptation', 'Sacrifice', 'Courage'] },
         { title: 'What kind of struggle is it?', options: ['Power', 'Weakness', 'Loyalty'] }
       ]
     },
     science: {
       title: 'Science',
-      desc: 'Start with wonder, discovery, design, creation, or a science question and let the trail move toward wisdom, humility, meaning, and Scripture.',
+      desc: 'Start with wonder, discovery, design, creation, or a science question and let the trail move toward humility, meaning, and wise reflection.',
       pills: ['Discovery', 'Creation', 'Design', 'Big question'],
       sampleInput: 'Why does the universe feel so vast?',
       questions: [
@@ -58,7 +58,7 @@
     },
     life: {
       title: 'Life Questions',
-      desc: 'Start with a personal question about purpose, pain, trust, wisdom, or direction, then move through a guided truth trail into Bible study output.',
+      desc: 'Start with a personal question about purpose, pain, trust, wisdom, or direction, then move through a guided truth trail into study output.',
       pills: ['Purpose', 'Trust', 'Suffering', 'Wisdom'],
       sampleInput: 'How do I trust God when life feels uncertain?',
       questions: [
@@ -173,6 +173,10 @@
       const data = payload.data;
       const text = extractGeminiText(data);
       const json = settings.json ? parseGeminiJson(text) : null;
+
+      if (settings.json && !json) {
+        console.warn('RootedOS JSON parse failed. Raw Gemini text:', text);
+      }
 
       return {
         ok: true,
@@ -397,12 +401,47 @@
     if (value.includes('forgive')) return 'Forgiveness';
     if (value.includes('wisdom')) return 'Wisdom';
     if (value.includes('suffer')) return 'Suffering';
+    if (value.includes('meaning')) return 'Meaning';
+    if (value.includes('context')) return 'Context';
+    if (value.includes('application')) return 'Application';
+    if (value.includes('obedience')) return 'Obedience';
+    if (value.includes('transform')) return 'Transformation';
     return '';
   }
 
   function themeSupport(theme, category) {
     const key = (theme || '').toLowerCase();
     const map = {
+      meaning: {
+        parallel: 'A need to understand what a passage is actually saying before moving to reflection or response.',
+        scripture: 'Scripture reference required (not generated)',
+        truth: 'Meaning becomes clearer when the passage is read carefully, in context, and with humility before God.',
+        studyTitle: 'Understanding the Meaning of the Passage'
+      },
+      context: {
+        parallel: 'A need to see how the passage fits within its surrounding message, audience, and purpose.',
+        scripture: 'Scripture reference required (not generated)',
+        truth: 'Context protects meaning by helping the passage speak within its intended setting and purpose.',
+        studyTitle: 'Reading the Passage in Context'
+      },
+      application: {
+        parallel: 'A movement from understanding into faithful response, obedience, and lived truth.',
+        scripture: 'Scripture reference required (not generated)',
+        truth: 'Application becomes faithful when it grows from the real meaning of the passage rather than personal assumption.',
+        studyTitle: 'Applying the Passage with Faithfulness'
+      },
+      obedience: {
+        parallel: 'A call to respond to truth not only with insight, but with surrendered action.',
+        scripture: 'Scripture reference required (not generated)',
+        truth: 'Obedience is not forced performance but a willing response to what God has made clear.',
+        studyTitle: 'Obedience and Response to the Word'
+      },
+      transformation: {
+        parallel: 'A passage that points toward inner renewal, changed thinking, and a reshaped life before God.',
+        scripture: 'Scripture reference required (not generated)',
+        truth: 'Transformation grows where truth is received deeply enough to renew the mind and redirect the life.',
+        studyTitle: 'Transformation Through the Word'
+      },
       temptation: {
         parallel: 'A struggle with desire, power, and weakness that calls for dependence on God.',
         scripture: 'Scripture reference required (not generated)',
@@ -460,10 +499,16 @@
     };
 
     return map[key] || {
-      parallel: 'A real human struggle or theme that can be traced toward a Biblical parallel and a truth statement.',
+      parallel: category === 'word'
+        ? 'A passage-centered question that should be traced through careful meaning, context, and faithful response.'
+        : 'A real human struggle or theme that can be traced toward a Biblical parallel and a truth statement.',
       scripture: 'Scripture reference required (not generated)',
-      truth: 'Truth becomes clearer when honest questions are guided toward Scripture, reflection, and wise response.',
-      studyTitle: titleCase((category || 'life') + ' Truth Trail')
+      truth: category === 'word'
+        ? 'Clarity grows when the passage is read carefully, honestly, and in context before conclusions are drawn.'
+        : 'Truth becomes clearer when honest questions are guided toward Scripture, reflection, and wise response.',
+      studyTitle: category === 'word'
+        ? 'Reading the Passage with Clarity'
+        : titleCase((category || 'life') + ' Truth Trail')
     };
   }
 
@@ -572,6 +617,30 @@
     });
 
     if (!result.ok || !result.json) {
+      if (meta.title === 'The Word') {
+        return {
+          source: result.reason === 'rate_limited' ? 'rate_limited' : 'fallback',
+          questionTitle: 'What do you want to understand more clearly in this passage?',
+          options: [
+            {
+              label: 'Meaning',
+              description: 'Trace what the passage is actually saying.',
+              theme: 'Meaning'
+            },
+            {
+              label: 'Context',
+              description: 'See how the passage fits its wider setting.',
+              theme: 'Context'
+            },
+            {
+              label: 'Application',
+              description: 'Move from understanding toward faithful response.',
+              theme: 'Application'
+            }
+          ]
+        };
+      }
+
       return {
         source: result.reason === 'rate_limited' ? 'rate_limited' : 'fallback',
         questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
@@ -622,6 +691,30 @@
       .slice(0, 3);
 
     if (cleanedOptions.length < 3) {
+      if (meta.title === 'The Word') {
+        return {
+          source: 'fallback',
+          questionTitle: 'What do you want to understand more clearly in this passage?',
+          options: [
+            {
+              label: 'Meaning',
+              description: 'Trace what the passage is actually saying.',
+              theme: 'Meaning'
+            },
+            {
+              label: 'Context',
+              description: 'See how the passage fits its wider setting.',
+              theme: 'Context'
+            },
+            {
+              label: 'Application',
+              description: 'Move from understanding toward faithful response.',
+              theme: 'Application'
+            }
+          ]
+        };
+      }
+
       return {
         source: 'fallback',
         questionTitle: fallbackQuestions[0] ? fallbackQuestions[0].title : 'What stands out most from this input?',
@@ -646,75 +739,6 @@
       questionTitle: String(result.json.questionTitle || 'What rises first here?').trim(),
       options: cleanedOptions
     };
-  }
-
-  function bindHomeOrbPanel() {
-    const categoryOrbs = document.querySelectorAll('.category-orb');
-    const resultPanel = document.getElementById('orb-result-panel');
-    if (!categoryOrbs.length || !resultPanel) return;
-
-    const resultTitle = document.getElementById('orb-result-title');
-    const resultDesc = document.getElementById('orb-result-desc');
-    const resultOpen = document.getElementById('orb-result-open');
-    const resultClose = document.getElementById('orb-result-close');
-    const resultCancel = document.getElementById('orb-result-cancel');
-    const desktopPreviewTitle = document.querySelector('.desktop-preview h2');
-    const desktopPreviewText = document.querySelector('.desktop-preview p');
-    const desktopPreviewButton = document.querySelector('.desktop-preview .ghost-btn');
-    const desktopOrbit = document.querySelector('.desktop-orbit');
-
-    categoryOrbs.forEach(function (orb) {
-      orb.addEventListener('click', function (event) {
-        event.preventDefault();
-
-        categoryOrbs.forEach(function (item) {
-          item.classList.remove('active');
-        });
-
-        if (desktopOrbit) {
-          desktopOrbit.classList.add('has-active');
-        }
-
-        orb.classList.add('active');
-
-        const category = orb.dataset.category || 'life';
-        const title = orb.dataset.title || orb.textContent.trim();
-        const desc = orb.dataset.desc || 'Open this sphere to continue your RootedOS trail.';
-        const glow = orb.dataset.glow || '94,183,255';
-        const href = orb.getAttribute('href') || 'input.html?category=life';
-
-        if (CATEGORY_META[category]) {
-          setStoredTrail({
-            category: category,
-            input: '',
-            theme: '',
-            questionOne: '',
-            questionTwo: ''
-          });
-          resetStudySession(category);
-          applyCategoryTheme();
-        }
-
-        if (resultTitle) resultTitle.textContent = title;
-        if (resultDesc) resultDesc.textContent = desc;
-        if (resultOpen) resultOpen.href = href;
-
-        resultPanel.style.setProperty('--result-glow', glow);
-        resultPanel.classList.add('show');
-
-        if (desktopPreviewTitle) desktopPreviewTitle.textContent = title;
-        if (desktopPreviewText) desktopPreviewText.textContent = desc;
-        if (desktopPreviewButton) desktopPreviewButton.href = href;
-      });
-    });
-
-    function closeOrbResult(event) {
-      if (event) event.preventDefault();
-      resultPanel.classList.remove('show');
-    }
-
-    if (resultClose) resultClose.addEventListener('click', closeOrbResult);
-    if (resultCancel) resultCancel.addEventListener('click', closeOrbResult);
   }
 
   function hydrateInputPage() {
@@ -793,7 +817,7 @@
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Reflection Step';
     if (title) title.textContent = 'Tap what rises to the surface.';
-    if (intro) intro.textContent = 'RootedOS uses guided questions instead of chat so the deeper theme can surface step by step.';
+    if (intro) intro.textContent = 'Choose the layer that feels most true to what surfaced. Each step moves the discovery trail forward without turning the experience into chat.';
     if (tag) tag.textContent = 'Discovery Node';
 
     const fixedHeading = questions[0]
@@ -870,23 +894,33 @@
       });
     }
 
-    const fallbackSet = {
-      source: 'fallback',
-      questionTitle: fixedHeading,
-      options: questions[0] && questions[0].options
-        ? questions[0].options.map(function (label) {
-            return {
-              label: label,
-              description: 'Select this if it feels closest to the heart of your input.',
-              theme: label
-            };
-          })
-        : [
-            { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
-            { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
-            { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+    const fallbackSet = meta.title === 'The Word'
+      ? {
+          source: 'fallback',
+          questionTitle: 'What do you want to understand more clearly in this passage?',
+          options: [
+            { label: 'Meaning', description: 'Trace what the passage is actually saying.', theme: 'Meaning' },
+            { label: 'Context', description: 'See how the passage fits its wider setting.', theme: 'Context' },
+            { label: 'Application', description: 'Move from understanding toward faithful response.', theme: 'Application' }
           ]
-    };
+        }
+      : {
+          source: 'fallback',
+          questionTitle: fixedHeading,
+          options: questions[0] && questions[0].options
+            ? questions[0].options.map(function (label) {
+                return {
+                  label: label,
+                  description: 'Select this if it feels closest to the heart of your input.',
+                  theme: label
+                };
+              })
+            : [
+                { label: 'Truth', description: 'Select this if you want to trace the deeper truth.', theme: 'Truth' },
+                { label: 'Pressure', description: 'Select this if the starting point feels heavy or urgent.', theme: 'Pressure' },
+                { label: 'Wisdom', description: 'Select this if you are looking for a wiser next step.', theme: 'Wisdom' }
+              ]
+        };
 
     applyQuestionSet(fallbackSet);
 
@@ -955,17 +989,29 @@
       maxOutputTokens: 700
     });
 
-    if (!result.ok || !result.json) {
+    if (!result.ok) {
+      return null;
+    }
+
+    const json = result.json || {};
+
+    const startingPoint = String(json.startingPoint || session.input || meta.sampleInput || '').trim();
+    const coreTheme = String(json.coreTheme || session.theme || 'Truth Trail Theme').trim();
+    const biblicalParallel = String(json.biblicalParallel || '').trim();
+    const truthStatement = String(json.truthStatement || '').trim();
+    const studyTitle = String(json.studyTitle || '').trim();
+
+    if (!startingPoint && !coreTheme && !biblicalParallel && !truthStatement && !studyTitle) {
       return null;
     }
 
     return {
-      startingPoint: String(result.json.startingPoint || session.input || meta.sampleInput || '').trim(),
-      coreTheme: String(result.json.coreTheme || session.theme || 'Truth Trail Theme').trim(),
-      biblicalParallel: String(result.json.biblicalParallel || '').trim(),
+      startingPoint: startingPoint,
+      coreTheme: coreTheme,
+      biblicalParallel: biblicalParallel,
       scriptureConnection: 'Scripture reference required (not generated)',
-      truthStatement: String(result.json.truthStatement || '').trim(),
-      studyTitle: String(result.json.studyTitle || '').trim()
+      truthStatement: truthStatement,
+      studyTitle: studyTitle
     };
   }
 
@@ -987,7 +1033,7 @@
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Truth Trail Map';
     if (title) title.textContent = 'A journey, not a reply.';
-    if (intro) intro.textContent = 'Your pathway moves from a real starting point toward a core theme, a Biblical parallel, a Scripture connection, and a truth statement.';
+    if (intro) intro.textContent = 'Your choices become a structured discovery map that moves from starting point to core theme, Biblical parallel, verified Scripture, and a clear truth statement.';
     if (trailStatus) trailStatus.textContent = 'Building your trail…';
 
     function renderTrail(labels) {
@@ -1195,7 +1241,6 @@
     const studyBuildStatus = document.querySelector('[data-study-build-status]');
     const sections = document.querySelectorAll('.study-section');
     const state = getStoredTrail();
-    const session = getStudySession();
     const meta = getMeta();
     const theme = ensureTheme(state) || 'Truth Trail Theme';
     const support = themeSupport(theme, getActiveCategory());
@@ -1218,7 +1263,7 @@
 
     if (eyebrow) eyebrow.textContent = meta.title + ' • Study Builder';
     if (pageTitle) pageTitle.textContent = 'Turn discovery into a guide.';
-    if (pageIntro) pageIntro.textContent = 'This output is shaped for easy reading, small groups, personal reflection, and future Bible study building.';
+    if (pageIntro) pageIntro.textContent = 'This study output is designed for personal reflection, small groups, journaling, and future shareable lesson guides.';
     if (studyBuildStatus) studyBuildStatus.textContent = 'Building your study output…';
 
     const primary = sections[0];
@@ -1709,15 +1754,6 @@
     }
   }
 
-  async function getCloudUserSafe() {
-    try {
-      if (!window.RootedOSSupabase) return null;
-      return await window.RootedOSSupabase.getUser();
-    } catch (error) {
-      return null;
-    }
-  }
-
   async function saveStudySessionToCloudIfSignedIn() {
     try {
       if (!window.RootedOSSupabase) return null;
@@ -1804,7 +1840,6 @@
           await window.RootedOSSupabase.signInWithMagicLink(email);
           if (authMessage) authMessage.textContent = 'Magic link sent. Check your email.';
         } catch (error) {
-          console.error('Magic link error:', error);
           if (authMessage) {
             authMessage.textContent = error && error.message
               ? 'Magic link error: ' + error.message
@@ -1985,7 +2020,7 @@
       id: payload.id || payload.uuid || createdAt + title,
       title: payload.study_title || title,
       category: payload.category_title || category,
-      createdAt,
+      createdAt: createdAt,
       text: String(text || '').trim(),
       href: 'study.html'
     };
@@ -2001,7 +2036,7 @@
       id: payload.id || payload.uuid || createdAt + title,
       title: payload.study_title || payload.studyTitle || title,
       category: payload.category_title || category,
-      createdAt,
+      createdAt: createdAt,
       text: textFrom(payload.text || payload),
       href: 'journal.html'
     };
@@ -2139,7 +2174,7 @@
   function getCategoriesExplored(studies, journals) {
     const categories = new Set();
 
-    [...studies, ...journals].forEach((item) => {
+    [].concat(studies, journals).forEach((item) => {
       if (item.category) categories.add(String(item.category).toLowerCase());
     });
 
@@ -2149,7 +2184,7 @@
   function getActiveDays(studies, journals) {
     const days = new Set();
 
-    [...studies, ...journals].forEach((item) => {
+    [].concat(studies, journals).forEach((item) => {
       const date = new Date(item.createdAt);
       if (!Number.isNaN(date.getTime())) {
         days.add(date.toISOString().slice(0, 10));
