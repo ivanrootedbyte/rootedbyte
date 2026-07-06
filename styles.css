@@ -572,3 +572,29 @@ button,input,textarea{font:inherit}
   }
   .category-content{font-size:8.8px}
 }
+.account-item,
+.saved-card,
+.choice,
+.primary-btn,
+.ghost-btn {
+  overflow-wrap: anywhere;
+}
+
+.primary-btn[aria-disabled="true"],
+.ghost-btn[aria-disabled="true"] {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.active-day {
+  border-color: rgba(var(--accent-rgb), .48) !important;
+  box-shadow: 0 0 22px rgba(var(--accent-rgb), .14);
+}
+
+[data-trail-status],
+[data-study-build-status],
+[data-study-save-status],
+[data-journal-status],
+[data-auth-message] {
+  min-height: 1.4em;
+}
