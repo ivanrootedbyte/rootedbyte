@@ -510,42 +510,56 @@
   }
 
   function buildAdaptiveQuestionsPrompt(session, meta) {
-    return [
-      'You generate guided discovery question sets for RootedOS.',
-      'RootedOS is not a chatbot and not a search engine.',
-      'It is a guided discovery experience.',
-      '',
-      'Audience: ages 14 to 33+.',
-      'Tone: simple, warm, reflective, clear.',
-      '',
-      'Category: ' + meta.title,
-      'User starting point: ' + (session.input || 'No input provided.'),
-      '',
-      'Rules:',
-      '- Return ONLY valid JSON.',
-      '- Do not include markdown fences.',
-      '- Do not include commentary before or after JSON.',
-      '- Do not quote Bible verses.',
-      '- Do not invent Scripture references.',
-      '- Do not mention AI or Gemini.',
-      '- Do not use labels like Node 01, Step 1, Option 1, Path 1.',
-      '- Create exactly 3 options.',
-      '- Each option must feel distinct but closely related to the user input.',
-      '- Each option label must be short, 1 to 3 words.',
-      '- Each description must be one sentence, under 16 words.',
-      '- Each theme must be short, 1 to 3 words.',
-      '',
-      'Return EXACTLY this schema:',
-      '{',
-      '  "questionTitle": "string",',
-      '  "options": [',
-      '    { "label": "string", "description": "string", "theme": "string" },',
-      '    { "label": "string", "description": "string", "theme": "string" },',
-      '    { "label": "string", "description": "string", "theme": "string" }',
-      '  ]',
-      '}'
-    ].join('\n');
-  }
+  const category = meta.title;
+  const input = session.input || 'No input provided.';
+
+  return [
+    'You generate guided discovery question sets for RootedOS.',
+    'RootedOS is not a chatbot and not a search engine.',
+    'It is a guided discovery experience.',
+    '',
+    'Audience: ages 14 to 33+.',
+    'Tone: simple, warm, reflective, clear, calm.',
+    '',
+    'Category: ' + category,
+    'User starting point: ' + input,
+    '',
+    'Category shaping rules:',
+    category === 'The Word'
+      ? '- Make the question set feel Scripture-first, reverent, clear, and text-centered.'
+      : '- Make the question set feel grounded in the user input and move toward a truth-centered theme.',
+    category === 'Movies'
+      ? '- Let options reflect deeper story themes, motives, sacrifice, fear, power, identity, or redemption.'
+      : '- Keep options close to the emotional or meaning layer beneath the input.',
+    category === 'Culture'
+      ? '- Let options expose worldview pressure, identity pressure, approval, performance, comparison, or belonging.'
+      : '- Avoid generic labels when more precise themes are possible.',
+    '',
+    'Rules:',
+    '- Return ONLY valid JSON.',
+    '- Do not include markdown fences.',
+    '- Do not include commentary before or after JSON.',
+    '- Do not quote Bible verses.',
+    '- Do not invent Scripture references.',
+    '- Do not mention AI or Gemini.',
+    '- Do not use labels like Node 01, Step 1, Option 1, Path 1.',
+    '- Create exactly 3 options.',
+    '- Each option must feel distinct but closely related to the user input.',
+    '- Each option label must be short, 1 to 3 words.',
+    '- Each description must be one sentence, under 16 words.',
+    '- Each theme must be short, 1 to 3 words.',
+    '',
+    'Return EXACTLY this schema:',
+    '{',
+    '  "questionTitle": "string",',
+    '  "options": [',
+    '    { "label": "string", "description": "string", "theme": "string" },',
+    '    { "label": "string", "description": "string", "theme": "string" },',
+    '    { "label": "string", "description": "string", "theme": "string" }',
+    '  ]',
+    '}'
+  ].join('\n');
+}
 
   async function generateAdaptiveQuestions(meta, fallbackQuestions) {
     const session = getStudySession();
@@ -884,41 +898,52 @@
   }
 
   function buildTrailPrompt(session, meta) {
-    return [
-      'You generate a guided truth trail for RootedOS.',
-      'RootedOS is not a chatbot and not a search engine.',
-      'It is a guided discovery experience moving from a real user starting point toward a clear truth trail.',
-      '',
-      'Audience: ages 14 to 33+.',
-      'Tone: clear, grounded, reflective, simple, warm.',
-      '',
-      'Category: ' + meta.title,
-      'User starting point: ' + (session.input || 'No input provided.'),
-      'Selected question path: ' + (session.questionOne || 'None selected.'),
-      'Theme if present: ' + (session.theme || 'None yet.'),
-      '',
-      'Rules:',
-      '- Return ONLY valid JSON.',
-      '- Do not include markdown fences.',
-      '- Do not include commentary before or after JSON.',
-      '- Do not invent Bible verses.',
-      '- Do not invent Scripture references.',
-      '- If exact Scripture is not verified, use the exact text: "Scripture reference required (not generated)".',
-      '- Biblical parallel must be concept-level, not a fake citation.',
-      '- Truth statement should be clear, concise, and meaningful.',
-      '- Study title should sound usable for a real study session.',
-      '',
-      'Return EXACTLY this schema:',
-      '{',
-      '  "startingPoint": "string",',
-      '  "coreTheme": "string",',
-      '  "biblicalParallel": "string",',
-      '  "scriptureConnection": "Scripture reference required (not generated)",',
-      '  "truthStatement": "string",',
-      '  "studyTitle": "string"',
-      '}'
-    ].join('\n');
-  }
+  return [
+    'You generate a guided truth trail for RootedOS.',
+    'RootedOS is not a chatbot and not a search engine.',
+    'It is a guided discovery experience moving from a real user starting point toward a clear truth trail.',
+    '',
+    'Audience: ages 14 to 33+.',
+    'Tone: clear, grounded, reflective, simple, warm.',
+    '',
+    'Category: ' + meta.title,
+    'User starting point: ' + (session.input || 'No input provided.'),
+    'Selected question path: ' + (session.questionOne || 'None selected.'),
+    'Theme if present: ' + (session.theme || 'None yet.'),
+    '',
+    'Category shaping rules:',
+    meta.title === 'The Word'
+      ? '- Make the trail feel Scripture-first and passage-aware, even when no verse can be verified yet.'
+      : '- Make the trail feel rooted in the user input and category, not generic.',
+    meta.title === 'Science'
+      ? '- Let the Biblical parallel move through wonder, humility, design, meaning, or creaturely limits.'
+      : '- Keep the Biblical parallel concept-level and believable.',
+    meta.title === 'Emotions'
+      ? '- Let the truth statement feel compassionate, steady, and emotionally honest.'
+      : '- Let the truth statement feel personally meaningful and usable.',
+    '',
+    'Rules:',
+    '- Return ONLY valid JSON.',
+    '- Do not include markdown fences.',
+    '- Do not include commentary before or after JSON.',
+    '- Do not invent Bible verses.',
+    '- Do not invent Scripture references.',
+    '- If exact Scripture is not verified, use the exact text: "Scripture reference required (not generated)".',
+    '- Biblical parallel must be concept-level, not a fake citation.',
+    '- Truth statement should be clear, concise, and meaningful.',
+    '- Study title should sound usable for a real study session.',
+    '',
+    'Return EXACTLY this schema:',
+    '{',
+    '  "startingPoint": "string",',
+    '  "coreTheme": "string",',
+    '  "biblicalParallel": "string",',
+    '  "scriptureConnection": "Scripture reference required (not generated)",',
+    '  "truthStatement": "string",',
+    '  "studyTitle": "string"',
+    '}'
+  ].join('\n');
+}
 
   async function generateTrailMap(meta) {
     const session = getStudySession();
@@ -1076,47 +1101,58 @@
   }
 
   function buildStudyPrompt(session, meta) {
-    const trail = session.trailMap || {};
+  const trail = session.trailMap || {};
 
-    return [
-      'You generate a study builder output for RootedOS.',
-      'RootedOS is a guided discovery experience, not a chatbot.',
-      '',
-      'Audience: ages 14 to 33+.',
-      'Tone: clear, rooted, reflective, simple, thoughtful.',
-      '',
-      'Category: ' + meta.title,
-      'Starting point: ' + (trail.startingPoint || session.input || 'No starting point provided.'),
-      'Core theme: ' + (trail.coreTheme || session.theme || 'No theme provided.'),
-      'Biblical parallel: ' + (trail.biblicalParallel || 'No biblical parallel provided.'),
-      'Truth statement: ' + (trail.truthStatement || session.truthStatement || 'No truth statement provided.'),
-      '',
-      'Rules:',
-      '- Return ONLY valid JSON.',
-      '- Do not include markdown fences.',
-      '- Do not include commentary before or after JSON.',
-      '- Do not invent Bible verses.',
-      '- Do not invent Scripture references.',
-      '- The keyScriptures field must contain only this exact text: "Scripture reference required (not generated)".',
-      '- Exegesis/context should be concept-level only until Scripture is verified.',
-      '- Discussion questions should feel usable in a real study or small group.',
-      '- Reflection prompts should feel personal and practical.',
-      '- Prayer should be short, sincere, and grounded.',
-      '- Slide outline should be concise and usable.',
-      '',
-      'Return EXACTLY this schema:',
-      '{',
-      '  "studyTitle": "string",',
-      '  "mainTheme": "string",',
-      '  "keyScriptures": ["Scripture reference required (not generated)"],',
-      '  "exegesisContext": "string",',
-      '  "discussionQuestions": ["string", "string", "string", "string"],',
-      '  "reflectionPrompts": ["string", "string", "string"],',
-      '  "prayer": "string",',
-      '  "slideOutline": ["string", "string", "string", "string", "string", "string"]',
-      '}'
-    ].join('\n');
-  }
+  return [
+    'You generate a study builder output for RootedOS.',
+    'RootedOS is a guided discovery experience, not a chatbot.',
+    '',
+    'Audience: ages 14 to 33+.',
+    'Tone: clear, rooted, reflective, simple, thoughtful, usable.',
+    '',
+    'Category: ' + meta.title,
+    'Starting point: ' + (trail.startingPoint || session.input || 'No starting point provided.'),
+    'Core theme: ' + (trail.coreTheme || session.theme || 'No theme provided.'),
+    'Biblical parallel: ' + (trail.biblicalParallel || 'No biblical parallel provided.'),
+    'Truth statement: ' + (trail.truthStatement || session.truthStatement || 'No truth statement provided.'),
+    '',
+    'Category shaping rules:',
+    meta.title === 'The Word'
+      ? '- Make the study feel most like a Scripture-centered study path.'
+      : '- Make the study feel anchored in the category and the starting point.',
+    meta.title === 'Movies'
+      ? '- Let the discussion questions move from story meaning to heart meaning to truth meaning.'
+      : '- Let discussion questions feel natural for real group use.',
+    meta.title === 'Life Questions'
+      ? '- Let reflection prompts feel practical, personal, and grounded.'
+      : '- Avoid vague prompts when specific reflective prompts are possible.',
+    '',
+    'Rules:',
+    '- Return ONLY valid JSON.',
+    '- Do not include markdown fences.',
+    '- Do not include commentary before or after JSON.',
+    '- Do not invent Bible verses.',
+    '- Do not invent Scripture references.',
+    '- The keyScriptures field must contain only this exact text: "Scripture reference required (not generated)".',
+    '- Exegesis/context should be concept-level only until Scripture is verified.',
+    '- Discussion questions should feel usable in a real study or small group.',
+    '- Reflection prompts should feel personal and practical.',
+    '- Prayer should be short, sincere, and grounded.',
+    '- Slide outline should be concise and usable.',
+    '',
+    'Return EXACTLY this schema:',
+    '{',
+    '  "studyTitle": "string",',
+    '  "mainTheme": "string",',
+    '  "keyScriptures": ["Scripture reference required (not generated)"],',
+    '  "exegesisContext": "string",',
+    '  "discussionQuestions": ["string", "string", "string", "string"],',
+    '  "reflectionPrompts": ["string", "string", "string"],',
+    '  "prayer": "string",',
+    '  "slideOutline": ["string", "string", "string", "string", "string", "string"]',
+    '}'
+  ].join('\n');
+}
 
   async function generateStudyOutput(meta) {
     const session = getStudySession();
@@ -1209,7 +1245,10 @@
 
     const truthParagraph = document.createElement('p');
     truthParagraph.className = 'muted';
-    truthParagraph.textContent = state.truthStatement || support.truth;
+    truthParagraph.textContent =
+  (getStudySession().trailMap && getStudySession().trailMap.truthStatement) ||
+  state.truthStatement ||
+  support.truth;
 
     if (!primary.querySelector('[data-bridges]')) {
       primary.appendChild(bridgesHeading);
