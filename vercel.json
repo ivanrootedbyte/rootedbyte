@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/rootedos.js": {
+      "maxDuration": 30
+    }
+  }
+}

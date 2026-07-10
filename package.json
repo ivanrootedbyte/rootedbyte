@@ -1,0 +1,17 @@
+{
+  "name": "rootedos-production-flow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal RootedOS AI truth-discovery flow for Vercel.",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "jsdom": "^25.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

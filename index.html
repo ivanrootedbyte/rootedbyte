@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RootedOS | Truth Discovery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="index">
+  <main class="page-shell hero">
+    <section class="orb-stage">
+      <button class="big-orb" type="button" data-open-input aria-label="Open RootedOS input">
+        <span>RootedOS</span>
+        <small>Tap to begin</small>
+      </button>
+      <div class="hero-copy">
+        <h1>Paste anything. Find the trail beneath it.</h1>
+        <p>Links, captions, articles, Bible passages, topics, scenes, questions, or plain text. RootedOS builds a question flow, then a concise Truth Trail Map.</p>
+      </div>
+      <p class="status" data-status></p>
+    </section>
+  </main>
+
+  <section class="input-panel" data-input-panel aria-modal="true">
+    <form class="input-card" data-input-form>
+      <span class="eyebrow">Input Node</span>
+      <h2>What should we read?</h2>
+      <p>Paste a public article link or type/paste the content directly. For blocked social links, paste the caption, transcript, or summary.</p>
+      <textarea data-rooted-input placeholder="Paste a link, topic, passage, quote, question, caption, transcript, or article text..."></textarea>
+      <div class="actions">
+        <button class="primary-btn" type="submit">Continue</button>
+        <button class="secondary-btn" type="button" data-close-input>Cancel</button>
+      </div>
+      <p class="status" data-status></p>
+    </form>
+  </section>
+
+  <script src="rootedos.js"></script>
+</body>
+</html>
