@@ -3,31 +3,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RootedOS | Truth Discovery</title>
+  <title>RootedOS | Truth Trail Discovery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="index">
-  <main class="page-shell hero">
-    <section class="orb-stage">
-      <button class="big-orb" type="button" data-open-input aria-label="Open RootedOS input">
-        <span>RootedOS</span>
-        <small>Tap to begin</small>
-      </button>
-      <div class="hero-copy">
-        <h1>Paste anything. Find the trail beneath it.</h1>
-        <p>Links, captions, articles, Bible passages, topics, scenes, questions, or plain text. RootedOS builds a question flow, then a concise Truth Trail Map.</p>
+  <main class="page-shell home-shell">
+    <section class="frame" aria-label="RootedOS truth discovery home">
+      <header class="topbar home-topbar">
+        <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <a class="brand brand-home" href="index.html"><span>RootedOS</span></a>
+        <nav class="nav-links top-actions" aria-label="Primary navigation">
+          <a href="journal.html">Journal</a>
+          <a href="study.html">Study</a>
+        </nav>
+      </header>
+
+      <div class="home-stage">
+        <section class="start-pane" aria-label="Tap to begin">
+          <button class="orb-link orb-trigger" type="button" data-open-input aria-label="Open RootedOS input">
+            <span class="orb" aria-hidden="true"></span>
+          </button>
+          <div class="micro-label">Tap the orb to begin</div>
+          <div class="hero-copy old-home-copy">
+            <h1>Paste anything. Follow the truth trail.</h1>
+            <p>Links, captions, articles, Bible passages, quotes, scenes, science questions, culture questions, emotions, or plain text. RootedOS reads what it can, asks better questions, then builds a concise Truth Trail Map.</p>
+          </div>
+          <p class="status" data-status></p>
+        </section>
       </div>
-      <p class="status" data-status></p>
+
+      <footer class="footer-line">
+        <strong>By RootedByte</strong>
+        <span>Clarity. Truth. Transformation.</span>
+        <span>Paste one thing. Follow the trail.</span>
+      </footer>
     </section>
   </main>
 
-  <section class="input-panel" data-input-panel aria-modal="true">
-    <form class="input-card" data-input-form>
+  <section class="input-panel" data-input-panel aria-modal="true" aria-label="RootedOS input panel">
+    <form class="input-card orb-input-card" data-input-form>
       <span class="eyebrow">Input Node</span>
-      <h2>What should we read?</h2>
+      <h2>What should RootedOS read?</h2>
       <p>Paste a public article link or type/paste the content directly. For blocked social links, paste the caption, transcript, or summary.</p>
       <textarea data-rooted-input placeholder="Paste a link, topic, passage, quote, question, caption, transcript, or article text..."></textarea>
       <div class="actions">
