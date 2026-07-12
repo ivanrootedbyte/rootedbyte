@@ -251,28 +251,36 @@
     const wrap = $('[data-trail-map]');
     if (wrap) {
       wrap.innerHTML = nodes.map(([num, label, text]) => `
-        <article class="trail-node trail-flip">
-          <button class="trail-flip-card" type="button" aria-label="Flip ${escapeHtml(label)} trail card">
-            <span class="trail-flip-inner">
-              <span class="trail-face trail-front">
-                <span class="trail-num">${num}</span>
-                <span class="trail-front-title">${escapeHtml(label)}</span>
-                <span class="trail-front-hint">Tap to reveal</span>
-              </span>
-              <span class="trail-face trail-back">
-                <span class="trail-back-kicker">${num} · ${escapeHtml(label)}</span>
-                <span class="trail-back-text">${escapeHtml(text)}</span>
-              </span>
-            </span>
-          </button>
-        </article>
-      `).join('');
+  <article class="trail-node trail-flip">
+    <div class="trail-flip-card" role="button" tabindex="0" aria-label="Flip ${escapeHtml(label)} trail card">
+      <span class="trail-flip-inner">
+        <span class="trail-face trail-front">
+          <span class="trail-num">${num}</span>
+          <span class="trail-front-title">${escapeHtml(label)}</span>
+          <span class="trail-front-hint">Tap to reveal</span>
+        </span>
+        <span class="trail-face trail-back">
+          <span class="trail-back-kicker">${num} · ${escapeHtml(label)}</span>
+          <span class="trail-back-text">${escapeHtml(text)}</span>
+        </span>
+      </span>
+    </div>
+  </article>
+`).join('');
 
       wrap.querySelectorAll('.trail-flip-card').forEach((card) => {
-        card.addEventListener('click', () => {
-          card.classList.toggle('is-flipped');
-        });
-      });
+  card.addEventListener('click', (event) => {
+    if (event.target.closest('.trail-back-text')) return;
+    card.classList.toggle('is-flipped');
+  });
+
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      card.classList.toggle('is-flipped');
+    }
+  });
+});
     }
 
     $('[data-open-study]')?.addEventListener('click', (event) => {
