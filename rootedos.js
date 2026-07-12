@@ -137,7 +137,8 @@
         questionSet: null,
         selectedAnswer: null,
         trailMap: null,
-        study: null
+        study: null,
+        questionTrail: []
       });
 
       try {
@@ -251,37 +252,176 @@
     const wrap = $('[data-trail-map]');
     if (wrap) {
       wrap.innerHTML = nodes.map(([num, label, text]) => `
-  <article class="trail-node trail-flip">
-    <div class="trail-flip-card" role="button" tabindex="0" aria-label="Flip ${escapeHtml(label)} trail card">
-      <span class="trail-flip-inner">
-        <span class="trail-face trail-front">
-          <span class="trail-num">${num}</span>
-          <span class="trail-front-title">${escapeHtml(label)}</span>
-          <span class="trail-front-hint">Tap to reveal</span>
-        </span>
-        <span class="trail-face trail-back">
-          <span class="trail-back-kicker">${num} · ${escapeHtml(label)}</span>
-          <span class="trail-back-text">${escapeHtml(text)}</span>
-        </span>
-      </span>
-    </div>
-  </article>
-`).join('');
+        <article class="trail-node trail-flip">
+          <div class="trail-flip-card" role="button" tabindex="0" aria-label="Flip ${escapeHtml(label)} trail card">
+            <span class="trail-flip-inner">
+              <span class="trail-face trail-front">
+                <span class="trail-num">${num}</span>
+                <span class="trail-front-title">${escapeHtml(label)}</span>
+                <span class="trail-front-hint">Tap to reveal</span>
+              </span>
+              <span class="trail-face trail-back">
+                <span class="trail-back-kicker">${num} · ${escapeHtml(label)}</span>
+                <span class="trail-back-text">${escapeHtml(text)}</span>
+              </span>
+            </span>
+          </div>
+        </article>
+      `).join('');
 
       wrap.querySelectorAll('.trail-flip-card').forEach((card) => {
-  card.addEventListener('click', (event) => {
-    if (event.target.closest('.trail-back-text')) return;
-    card.classList.toggle('is-flipped');
-  });
+        card.addEventListener('click', (event) => {
+          if (event.target.closest('.trail-back-text')) return;
+          card.classList.toggle('is-flipped');
+        });
 
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      card.classList.toggle('is-flipped');
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            card.classList.toggle('is-flipped');
+          }
+        });
+      });
     }
-  });
-});
+
+    function ensureTrailLoop() {
+      let loop = $('[data-trail-loop]');
+      if (!loop) {
+        loop = document.createElement('section');
+        loop.className = 'trail-loop';
+        loop.setAttribute('data-trail-loop', '');
+        const status = $('[data-status]');
+        if (status?.parentNode) status.parentNode.insertBefore(loop, status);
+        else wrap?.after(loop);
+      }
+      return loop;
     }
+
+    function modeLabel(mode) {
+      return ({
+        go_deeper: 'Go deeper',
+        make_practical: 'Make it practical',
+        challenge_assumption: 'Challenge my assumption',
+        help_journal: 'Help me journal this'
+      })[mode] || 'Keep exploring';
+    }
+
+    function renderTrailLoop() {
+      const current = getSession() || session;
+      const trail = Array.isArray(current.questionTrail) ? current.questionTrail : [];
+      const loop = ensureTrailLoop();
+      const latest = trail[trail.length - 1];
+      const history = trail.filter(node => node.selectedOption || node.reflection).slice(-3);
+
+      loop.innerHTML = `
+        <div class="trail-loop-shell">
+          <div class="trail-loop-top">
+            <span class="eyebrow">Question Trail</span>
+            <h2>Where do you want to go next?</h2>
+            <p>RootedOS should not end with an output. Choose a direction and keep asking better questions.</p>
+          </div>
+
+          <div class="trail-loop-modes" aria-label="Continue exploring options">
+            <button type="button" data-continue-mode="go_deeper">Go deeper</button>
+            <button type="button" data-continue-mode="make_practical">Make practical</button>
+            <button type="button" data-continue-mode="challenge_assumption">Challenge assumption</button>
+            <button type="button" data-continue-mode="help_journal">Journal it</button>
+          </div>
+
+          ${latest ? `
+            <article class="trail-question-node">
+              <div class="trail-question-meta">${escapeHtml(modeLabel(latest.mode))}</div>
+              ${latest.reflection ? `
+                <div class="trail-reflection-card">
+                  <strong>${escapeHtml(latest.reflection.title || 'What surfaced')}</strong>
+                  <p>${escapeHtml(latest.reflection.insight || '')}</p>
+                  <p>${escapeHtml(latest.reflection.truthReframe || '')}</p>
+                  <small>${escapeHtml(latest.reflection.practice || '')}</small>
+                </div>
+              ` : ''}
+              <h3>${escapeHtml(latest.question)}</h3>
+              <div class="trail-answer-grid">
+                ${(latest.options || []).map((option, index) => `
+                  <button type="button" class="trail-answer-btn ${latest.selectedOption?.label === option.label ? 'is-selected' : ''}" data-answer-node="${escapeHtml(latest.id)}" data-answer-index="${index}">
+                    <strong>${escapeHtml(option.label)}</strong>
+                    <span>${escapeHtml(option.description)}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </article>
+          ` : ''}
+
+          ${history.length ? `
+            <div class="trail-loop-history">
+              <strong>Recent exploration</strong>
+              ${history.map(node => `
+                <p><span>${escapeHtml(modeLabel(node.mode))}</span> ${escapeHtml(node.selectedOption?.label || node.question || '')}</p>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      loop.querySelectorAll('[data-continue-mode]').forEach(button => {
+        button.addEventListener('click', () => requestNextQuestion(button.dataset.continueMode));
+      });
+
+      loop.querySelectorAll('[data-answer-node]').forEach(button => {
+        button.addEventListener('click', () => answerQuestionNode(button.dataset.answerNode, Number(button.dataset.answerIndex)));
+      });
+    }
+
+    async function requestNextQuestion(mode, userResponse = null, previousQuestion = '') {
+      const current = getSession() || session;
+      try {
+        showLoading(userResponse ? 'Building the next honest question...' : 'Opening the next question...');
+        const result = await api('continue_trail', {
+          mode,
+          rawInput: current.rawInput,
+          extractedText: current.extractedText,
+          summary: current.summary,
+          detectedTopic: current.detectedTopic,
+          selectedAnswer: current.selectedAnswer,
+          trailMap: current.trailMap,
+          questionTrail: current.questionTrail || [],
+          previousQuestion,
+          userResponse
+        });
+
+        const nextNode = {
+          ...(result.node || {}),
+          id: String(Date.now()),
+          createdAt: nowIso(),
+          mode
+        };
+
+        const nextTrail = [...(current.questionTrail || []), nextNode];
+        saveSession({ questionTrail: nextTrail });
+        hideLoading('Choose the answer that feels most honest right now.');
+        renderTrailLoop();
+      } catch (error) {
+        hideLoading('');
+        setStatus(error.message, 'error');
+      }
+    }
+
+    async function answerQuestionNode(nodeId, optionIndex) {
+      const current = getSession() || session;
+      const trail = Array.isArray(current.questionTrail) ? current.questionTrail : [];
+      const nodeIndex = trail.findIndex(node => String(node.id) === String(nodeId));
+      if (nodeIndex < 0) return;
+
+      const node = trail[nodeIndex];
+      const option = node.options?.[optionIndex];
+      if (!option) return;
+
+      const updatedTrail = trail.map((item, index) => index === nodeIndex ? { ...item, selectedOption: option } : item);
+      saveSession({ questionTrail: updatedTrail });
+      renderTrailLoop();
+      await requestNextQuestion(node.mode, option, node.question);
+    }
+
+    renderTrailLoop();
 
     $('[data-open-study]')?.addEventListener('click', (event) => {
       event.preventDefault();
@@ -290,7 +430,9 @@
 
     $('[data-share-trail]')?.addEventListener('click', async (event) => {
       event.preventDefault();
-      const text = `RootedOS Truth Trail: ${session.detectedTopic}\n\nSignal: ${map.signal}\nTruth Anchor: ${map.truthAnchor}\nNext Step: ${map.nextStep}`;
+      const current = getSession() || session;
+      const currentMap = current.trailMap || map;
+      const text = `RootedOS Truth Trail: ${current.detectedTopic}\n\nSignal: ${currentMap.signal}\nTruth Anchor: ${currentMap.truthAnchor}\nNext Step: ${currentMap.nextStep}`;
       try {
         if (navigator.share) await navigator.share({ title: 'RootedOS Truth Trail', text });
         else {
