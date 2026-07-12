@@ -7,45 +7,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body data-page="index">
-  <main class="page-shell home-shell">
+  <main class="page-shell home-shell minimal-home">
     <section class="frame" aria-label="RootedOS truth discovery home">
-      <header class="topbar home-topbar">
-        <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-        <a class="brand brand-home" href="index.html"><span>RootedOS</span></a>
-        <nav class="nav-links top-actions" aria-label="Primary navigation">
-          <a href="journal.html">Journal</a>
-          <a href="study.html">Study</a>
-        </nav>
-      </header>
-
-      <div class="home-stage">
-        <section class="start-pane" aria-label="Tap to begin">
-          <button class="orb-link orb-trigger" type="button" data-open-input aria-label="Open RootedOS input">
-            <span class="orb" aria-hidden="true"></span>
+      <div class="home-stage home-stage-minimal">
+        <section class="start-pane start-pane-minimal" aria-label="Tap to begin">
+          <button class="orb-link orb-trigger home-orb-trigger" type="button" data-open-input aria-label="Open RootedOS input">
+            <span class="orb home-main-orb" aria-hidden="true"></span>
           </button>
-          <div class="micro-label">Tap the orb to begin</div>
-          <div class="hero-copy old-home-copy">
-            <h1>Paste anything. Follow the truth trail.</h1>
-            <p>Links, captions, articles, Bible passages, quotes, scenes, science questions, culture questions, emotions, or plain text. RootedOS reads what it can, asks better questions, then builds a concise Truth Trail Map.</p>
-          </div>
+          <div class="micro-label">Open the orb</div>
+          <p class="home-mini-copy">Paste a link, passage, question, quote, caption, scene, emotion, or thought.</p>
           <p class="status" data-status></p>
         </section>
       </div>
-
-      <footer class="footer-line">
-        <strong>By RootedByte</strong>
-        <span>Clarity. Truth. Transformation.</span>
-        <span>Paste one thing. Follow the trail.</span>
-      </footer>
     </section>
   </main>
 
   <section class="input-panel" data-input-panel aria-modal="true" aria-label="RootedOS input orb">
     <form class="input-card orb-input-card orb-lens-form" data-input-form>
-      <textarea data-rooted-input aria-label="RootedOS input" placeholder="Paste a link, quote, passage, question, caption, transcript, or thought..."></textarea>
+      <textarea data-rooted-input aria-label="RootedOS input" placeholder="Paste anything here..."></textarea>
       <div class="actions orb-actions">
         <button class="primary-btn" type="submit">Begin Trail</button>
         <button class="secondary-btn" type="button" data-close-input>Close</button>
