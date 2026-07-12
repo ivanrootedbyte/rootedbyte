@@ -1046,42 +1046,58 @@ body[data-page="trail"] .trail-node.trail-flip:before{
   }
 }
 
-/* Trail flip-card revealed output scroll */
-.trail-flip-card .trail-card-back,
-.trail-card-back {
+/* Trail flip-card long text scroll - matches rootedos.js */
+.trail-flip-card,
+.trail-flip-inner,
+.trail-face {
+  min-height: 320px;
+}
+
+.trail-back {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.trail-back-kicker {
+  flex: 0 0 auto;
+}
+
+.trail-back-text {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 230px;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  padding-right: 10px;
+  line-height: 1.6;
+  cursor: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(var(--accent-rgb), .55) rgba(255,255,255,.08);
+  scrollbar-color: rgba(var(--accent-rgb), .65) rgba(255,255,255,.08);
 }
 
-.trail-flip-card .trail-card-back p,
-.trail-card-back p {
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-
-.trail-flip-card .trail-card-back::-webkit-scrollbar,
-.trail-card-back::-webkit-scrollbar {
+.trail-back-text::-webkit-scrollbar {
   width: 7px;
 }
 
-.trail-flip-card .trail-card-back::-webkit-scrollbar-track,
-.trail-card-back::-webkit-scrollbar-track {
+.trail-back-text::-webkit-scrollbar-track {
   background: rgba(255,255,255,.06);
   border-radius: 999px;
 }
 
-.trail-flip-card .trail-card-back::-webkit-scrollbar-thumb,
-.trail-card-back::-webkit-scrollbar-thumb {
-  background: rgba(var(--accent-rgb), .55);
+.trail-back-text::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-rgb), .65);
   border-radius: 999px;
 }
 
 @media(max-width:560px){
-  .trail-flip-card .trail-card-back p,
-  .trail-card-back p {
-    max-height: 180px;
+  .trail-flip-card,
+  .trail-flip-inner,
+  .trail-face {
+    min-height: 360px;
+  }
+
+  .trail-back-text {
+    max-height: 260px;
   }
 }
