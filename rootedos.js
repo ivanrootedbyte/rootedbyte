@@ -251,14 +251,28 @@
     const wrap = $('[data-trail-map]');
     if (wrap) {
       wrap.innerHTML = nodes.map(([num, label, text]) => `
-        <article class="trail-node">
-          <div class="trail-num">${num}</div>
-          <div>
-            <h3>${escapeHtml(label)}</h3>
-            <p>${escapeHtml(text)}</p>
-          </div>
+        <article class="trail-node trail-flip">
+          <button class="trail-flip-card" type="button" aria-label="Flip ${escapeHtml(label)} trail card">
+            <span class="trail-flip-inner">
+              <span class="trail-face trail-front">
+                <span class="trail-num">${num}</span>
+                <span class="trail-front-title">${escapeHtml(label)}</span>
+                <span class="trail-front-hint">Tap to reveal</span>
+              </span>
+              <span class="trail-face trail-back">
+                <span class="trail-back-kicker">${num} · ${escapeHtml(label)}</span>
+                <span class="trail-back-text">${escapeHtml(text)}</span>
+              </span>
+            </span>
+          </button>
         </article>
       `).join('');
+
+      wrap.querySelectorAll('.trail-flip-card').forEach((card) => {
+        card.addEventListener('click', () => {
+          card.classList.toggle('is-flipped');
+        });
+      });
     }
 
     $('[data-open-study]')?.addEventListener('click', (event) => {
