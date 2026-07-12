@@ -1045,3 +1045,43 @@ body[data-page="trail"] .trail-node.trail-flip:before{
     min-height:220px;
   }
 }
+
+/* Trail flip-card revealed output scroll */
+.trail-flip-card .trail-card-back,
+.trail-card-back {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-rgb), .55) rgba(255,255,255,.08);
+}
+
+.trail-flip-card .trail-card-back p,
+.trail-card-back p {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.trail-flip-card .trail-card-back::-webkit-scrollbar,
+.trail-card-back::-webkit-scrollbar {
+  width: 7px;
+}
+
+.trail-flip-card .trail-card-back::-webkit-scrollbar-track,
+.trail-card-back::-webkit-scrollbar-track {
+  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+}
+
+.trail-flip-card .trail-card-back::-webkit-scrollbar-thumb,
+.trail-card-back::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-rgb), .55);
+  border-radius: 999px;
+}
+
+@media(max-width:560px){
+  .trail-flip-card .trail-card-back p,
+  .trail-card-back p {
+    max-height: 180px;
+  }
+}
