@@ -298,6 +298,93 @@ Theme: ${cleanText(payload.theme)}`;
   return { ok: true, trailMap: trail };
 }
 
+
+async function continueTrail(payload) {
+  const mode = cleanText(payload.mode || 'go_deeper');
+  const modeInstruction = {
+    go_deeper: 'Ask a deeper question that helps the user notice the hidden desire, fear, assumption, or longing underneath the trail.',
+    make_practical: 'Ask a concrete next-step question that moves the user from insight into one faithful practice today.',
+    challenge_assumption: 'Ask a careful question that tests what the user may be assuming, exaggerating, avoiding, or accepting too quickly.',
+    help_journal: 'Ask a journal-friendly question that helps the user write honestly without spiraling or performing.'
+  }[mode] || 'Ask the next honest question that helps the user continue exploring.';
+
+  const questionTrail = Array.isArray(payload.questionTrail) ? payload.questionTrail.slice(-6) : [];
+  const hasUserResponse = !!cleanText(payload.userResponse?.label || payload.userResponse?.description || payload.userResponse || '');
+  const userResponse = typeof payload.userResponse === 'object'
+    ? JSON.stringify(payload.userResponse)
+    : cleanText(payload.userResponse || '');
+
+  const prompt = `RootedOS should not end with a final output. Continue the user's Question Trail.
+
+Direction: ${mode}
+Direction instruction: ${modeInstruction}
+
+Return JSON exactly:
+{
+  "ok": true,
+  "node": {
+    "mode": "${mode}",
+    "title": "short title for this question node",
+    "contextLine": "one specific line connecting the previous trail to this question",
+    "question": "one specific next honest question, not generic",
+    "options": [
+      { "label": "2-5 words", "description": "specific answer path", "theme": "short theme" },
+      { "label": "2-5 words", "description": "specific answer path", "theme": "short theme" },
+      { "label": "2-5 words", "description": "specific answer path", "theme": "short theme" }
+    ],
+    "reflection": ${hasUserResponse ? `{
+      "title": "short reflection title",
+      "insight": "what the user's answer may reveal, specific and non-shaming",
+      "truthReframe": "a grounded truth reframe, natural and inclusive",
+      "practice": "one tiny practice for today"
+    }` : 'null'}
+  }
+}
+
+Rules:
+- Keep asking the next useful question. Do not sound like a final essay.
+- Be specific to the original input, trail map, and user's selected answers.
+- Do not invent Scripture references.
+- Avoid preachy/churchy tone by default.
+- Keep each option concise and distinct.
+
+Original raw input: ${cleanText(payload.rawInput)}
+Extracted text: ${limitText(payload.extractedText || '', 7000)}
+Detected topic: ${cleanText(payload.detectedTopic)}
+Summary: ${cleanText(payload.summary)}
+Selected answer/path: ${typeof payload.selectedAnswer === 'object' ? JSON.stringify(payload.selectedAnswer) : cleanText(payload.selectedAnswer)}
+Truth Trail Map: ${JSON.stringify(payload.trailMap || {})}
+Previous question: ${cleanText(payload.previousQuestion)}
+User response to previous question: ${userResponse}
+Recent Question Trail history: ${JSON.stringify(questionTrail)}`;
+
+  const result = await callGemini(prompt);
+  const node = result.node || {};
+  if (!cleanText(node.question)) throw new Error('AI did not return the next question.');
+  if (!Array.isArray(node.options) || node.options.length < 3) throw new Error('AI did not return three answer paths.');
+
+  return {
+    ok: true,
+    node: {
+      mode,
+      title: cleanText(node.title || 'Question Trail'),
+      contextLine: cleanText(node.contextLine || ''),
+      question: cleanText(node.question),
+      options: node.options.slice(0, 3).map(option => ({
+        label: cleanText(option.label),
+        description: cleanText(option.description),
+        theme: cleanText(option.theme)
+      })),
+      reflection: node.reflection ? {
+        title: cleanText(node.reflection.title || 'What surfaced'),
+        insight: cleanText(node.reflection.insight || ''),
+        truthReframe: cleanText(node.reflection.truthReframe || ''),
+        practice: cleanText(node.reflection.practice || '')
+      } : null
+    }
+  };
+}
+
 async function generateStudy(payload) {
   const prompt = `Create a concise, useful RootedOS Study Builder output for journaling and optional PPT.
 
@@ -342,6 +429,7 @@ module.exports = async function handler(req, res) {
     if (action === 'generate_questions') return sendJson(res, 200, await generateQuestions(payload));
     if (action === 'generate_trail') return sendJson(res, 200, await generateTrail(payload));
     if (action === 'generate_study') return sendJson(res, 200, await generateStudy(payload));
+    if (action === 'continue_trail') return sendJson(res, 200, await continueTrail(payload));
 
     return sendJson(res, 400, { ok: false, message: 'Unknown RootedOS action.' });
   } catch (error) {
