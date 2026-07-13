@@ -4,6 +4,16 @@
   const JOURNAL_KEY = 'rootedosJournalEntries';
   const LIMITS = { journalsPerMonth: 5, pptPerMonth: 5 };
   const PAYGATE_MESSAGE = 'You’ve reached the free monthly limit. Upgrade to unlock more saved journals and PowerPoint generations.';
+  const INTRO_KEY = 'rootedosIntroSeen';
+  const DAILY_QUOTES = [
+    'Truth does not rush you. It roots you.',
+    'Not every strong feeling is a faithful guide.',
+    'What shapes your attention eventually shapes your direction.',
+    'Wisdom begins when reaction slows down.',
+    'The question underneath the question is often where truth begins.',
+    'Peace is not the absence of pressure; it is being anchored under it.',
+    'Do not only ask what this means. Ask what it is forming in you.'
+  ];
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -11,6 +21,15 @@
   function nowIso() { return new Date().toISOString(); }
   function monthKey() { return new Date().toISOString().slice(0, 7); }
   function cleanText(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
+
+  function dailyQuote() {
+    const day = Math.floor(Date.now() / 86400000);
+    return DAILY_QUOTES[day % DAILY_QUOTES.length];
+  }
+
+  function rootUrl() {
+    return window.location.origin + window.location.pathname.replace(/[^/]*$/, 'index.html');
+  }
 
   function readJson(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (_) { return fallback; }
@@ -107,6 +126,21 @@
     const panel = $('[data-input-panel]');
     const form = $('[data-input-form]');
     const input = $('[data-rooted-input]');
+    const quoteEls = $$('[data-daily-quote], [data-intro-quote]');
+    const intro = $('[data-intro-modal]');
+
+    quoteEls.forEach(el => { el.textContent = dailyQuote(); });
+
+    if (intro && localStorage.getItem(INTRO_KEY) !== 'true') {
+      intro.classList.add('is-open');
+    }
+
+    $('[data-close-intro]')?.addEventListener('click', () => {
+      localStorage.setItem(INTRO_KEY, 'true');
+      intro?.classList.remove('is-open');
+      panel?.classList.add('is-open');
+      input?.focus();
+    });
 
     if (!orb || !panel || !form || !input) return;
 
@@ -542,8 +576,49 @@
     slide.addText(bulletText || 'No notes added.', { x: 0.65, y: 1.0, w: 8.6, h: 4.2, fontSize: 15, breakLine: false, fit: 'shrink' });
   }
 
+
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+        if (window.pptxgen) resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadPptxGen() {
+    const sources = [
+      'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js',
+      'https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js'
+    ];
+
+    for (const src of sources) {
+      try {
+        await loadScriptOnce(src);
+        if (window.pptxgen) return;
+      } catch (_) {}
+    }
+  }
+
   async function generatePpt(session, journalText) {
-    if (!window.pptxgen) throw new Error('PptxGenJS did not load. Check the CDN script on study.html.');
+    if (!window.pptxgen) {
+      await loadPptxGen();
+    }
+
+    if (!window.pptxgen) {
+      throw new Error('PowerPoint generator could not load. Please refresh the page and try again.');
+    }
+
     const pptx = new window.pptxgen();
     pptx.layout = 'LAYOUT_WIDE';
     pptx.author = 'RootedOS';
@@ -621,6 +696,25 @@
     `).join('');
   }
 
+
+  function initAccount() {
+    const journalUsed = usageCount('journal');
+    const pptUsed = usageCount('ppt');
+    const entries = readJson(JOURNAL_KEY, []);
+
+    const journalCount = $('[data-account-journal-count]');
+    const pptCount = $('[data-account-ppt-count]');
+    const savedCount = $('[data-account-saved-count]');
+    const journalMeter = $('[data-account-journal-meter]');
+    const pptMeter = $('[data-account-ppt-meter]');
+
+    if (journalCount) journalCount.textContent = `Journals: ${journalUsed} / ${LIMITS.journalsPerMonth}`;
+    if (pptCount) pptCount.textContent = `PPT: ${pptUsed} / ${LIMITS.pptPerMonth}`;
+    if (savedCount) savedCount.textContent = `${entries.length} saved entr${entries.length === 1 ? 'y' : 'ies'} on this browser.`;
+    if (journalMeter) journalMeter.style.setProperty('--meter', `${Math.min(100, (journalUsed / LIMITS.journalsPerMonth) * 100)}%`);
+    if (pptMeter) pptMeter.style.setProperty('--meter', `${Math.min(100, (pptUsed / LIMITS.pptPerMonth) * 100)}%`);
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const page = document.body.dataset.page;
     if (page === 'index') initIndex();
@@ -628,5 +722,6 @@
     if (page === 'trail') initTrail();
     if (page === 'study') initStudy();
     if (page === 'journal') initJournal();
+    if (page === 'account') initAccount();
   });
 })();
