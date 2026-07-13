@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RootedOS | My RootedOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=8">
+</head>
+<body data-page="account">
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-mark"></span><span>RootedOS</span></a>
+      <nav class="nav-links"><a href="index.html">New trail</a><a href="journal.html">Journal</a><a href="about.html">About</a></nav>
+    </header>
+
+    <section class="page-heading">
+      <span class="eyebrow">My RootedOS</span>
+      <h1>Your private formation space</h1>
+      <p>This MVP saves journals and usage locally in this browser. Supabase Auth can be added later for cross-device accounts.</p>
+    </section>
+
+    <section class="account-grid">
+      <article class="account-card usage-meter">
+        <h2>Monthly usage</h2>
+        <p data-account-journal-count>Journals: 0 / 5</p>
+        <div class="meter-line"><span data-account-journal-meter></span></div>
+        <p data-account-ppt-count>PPT: 0 / 5</p>
+        <div class="meter-line"><span data-account-ppt-meter></span></div>
+      </article>
+      <article class="account-card">
+        <h2>Saved journals</h2>
+        <p data-account-saved-count>0 saved entries on this browser.</p>
+        <div class="actions"><a class="primary-btn" href="journal.html">Open Journal</a></div>
+      </article>
+      <article class="account-card">
+        <h2>Coming soon: real account sync</h2>
+        <p>Connect Supabase Auth to save journals, trails, Formation Map, and shared outputs across devices.</p>
+      </article>
+      <article class="account-card">
+        <h2>Upgrade prompt</h2>
+        <p>You have the free monthly limits now. Upgrade messaging is already used when journal or PPT limits are reached.</p>
+      </article>
+    </section>
+  </main>
+  <script src="rootedos.js?v=8"></script>
+</body>
+</html>
