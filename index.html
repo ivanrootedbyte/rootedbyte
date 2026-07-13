@@ -7,27 +7,52 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body data-page="index">
   <main class="page-shell home-shell minimal-home">
     <section class="frame" aria-label="RootedOS truth discovery home">
+      <header class="home-brand-row" aria-label="RootedOS navigation">
+        <a class="home-brand-word" href="index.html">RootedOS</a>
+        <nav class="home-nav-mini">
+          <a href="about.html">About</a>
+          <a href="journal.html">Journal</a>
+          <a href="account.html">My RootedOS</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+      </header>
+
       <div class="home-stage home-stage-minimal">
         <section class="start-pane start-pane-minimal" aria-label="Tap to begin">
           <button class="orb-link orb-trigger home-orb-trigger" type="button" data-open-input aria-label="Open RootedOS input">
             <span class="orb home-main-orb" aria-hidden="true"></span>
           </button>
           <div class="micro-label">Open the orb</div>
-          <p class="home-mini-copy">Type or paste a link, passage, question, quote, caption, scene, emotion, or thought.</p>
+          <p class="home-mini-purpose"><strong>Drop anything into the orb.</strong> A thought, link, question, verse, post, feeling, or topic. RootedOS helps you see what it is forming in you and respond from truth instead of reaction.</p>
+          <p class="daily-quote-chip" data-daily-quote></p>
           <p class="status" data-status></p>
         </section>
       </div>
     </section>
   </main>
 
+  <section class="intro-modal" data-intro-modal aria-modal="true" aria-label="Welcome to RootedOS">
+    <div class="intro-card">
+      <span class="eyebrow">Welcome to RootedOS</span>
+      <h2>The orb is not a search bar.</h2>
+      <p>Most AI gives answers. RootedOS helps you ask the question underneath the question.</p>
+      <p>Paste anything into the orb — a link, thought, emotion, Bible passage, quote, or topic — and RootedOS will help you notice the signal, pressure, formation, truth anchor, and next step.</p>
+      <div class="intro-quote" data-intro-quote></div>
+      <div class="intro-actions">
+        <button class="primary-btn" type="button" data-close-intro>Open the orb</button>
+        <a class="secondary-btn" href="about.html">Learn what makes it different</a>
+      </div>
+    </div>
+  </section>
+
   <section class="input-panel" data-input-panel aria-modal="true" aria-label="RootedOS input orb">
     <form class="input-card orb-input-card orb-lens-form" data-input-form>
-      <textarea data-rooted-input aria-label="RootedOS input" placeholder="Type or paste anything here..."></textarea>
+      <textarea data-rooted-input aria-label="RootedOS input" placeholder="Paste anything here..."></textarea>
       <div class="actions orb-actions">
         <button class="primary-btn" type="submit">Begin Trail</button>
         <button class="secondary-btn" type="button" data-close-input>Close</button>
@@ -36,6 +61,6 @@
     </form>
   </section>
 
-  <script src="rootedos.js"></script>
+  <script src="rootedos.js?v=8"></script>
 </body>
 </html>
