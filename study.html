@@ -7,13 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body data-page="study">
   <main class="page-shell">
     <header class="topbar">
       <a class="brand" href="index.html"><span class="brand-mark"></span><span>RootedOS</span></a>
-      <nav class="nav-links"><a href="trail.html">Trail</a><a href="journal.html">Journal</a></nav>
+      <nav class="nav-links"><a href="trail.html">Trail</a><a href="journal.html">Journal</a><a href="account.html">My RootedOS</a></nav>
     </header>
 
     <section data-study-body></section>
@@ -30,6 +30,13 @@
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-  <script src="rootedos.js"></script>
+  <script>
+    window.addEventListener('error', function (event) {
+      if (String(event && event.target && event.target.src || '').includes('pptxgen')) {
+        console.error('PptxGenJS CDN failed to load. RootedOS will try a backup when PPT is requested.');
+      }
+    }, true);
+  </script>
+  <script src="rootedos.js?v=8"></script>
 </body>
 </html>
