@@ -340,27 +340,76 @@
       })[mode] || 'Keep exploring';
     }
 
+    function buildJournalChoices(current) {
+      const topic = cleanText(current.detectedTopic || 'this trail');
+      const truth = cleanText(current.trailMap?.truthAnchor || 'the truth that steadies this issue');
+      const next = cleanText(current.trailMap?.nextStep || 'one faithful next step');
+      return [
+        {
+          label: 'Name what surfaced',
+          description: 'Start with the honest feeling, pressure, or reaction this trail revealed.',
+          prompt: `What surfaced in me as I explored ${topic}, and what pressure or desire seems to be underneath it?`
+        },
+        {
+          label: 'Anchor the truth',
+          description: 'Write from the truth anchor instead of the pressure.',
+          prompt: `What truth do I need to remember about ${topic}? In my own words, how does this steady me: ${truth}`
+        },
+        {
+          label: 'Practice one thing',
+          description: 'Turn the trail into one small action today.',
+          prompt: `What is one wise and faithful practice I can take today? Use this as a starting point: ${next}`
+        }
+      ];
+    }
+
     function renderTrailLoop() {
       const current = getSession() || session;
       const trail = Array.isArray(current.questionTrail) ? current.questionTrail : [];
       const loop = ensureTrailLoop();
       const latest = trail[trail.length - 1];
       const history = trail.filter(node => node.selectedOption || node.reflection).slice(-3);
+      const journalChoices = buildJournalChoices(current);
+      const showJournalChoices = !!current.showJournalChoices;
+      const selectedJournalPrompt = cleanText(current.journalDraftPrompt || '');
 
       loop.innerHTML = `
         <div class="trail-loop-shell">
           <div class="trail-loop-top">
             <span class="eyebrow">Question Trail</span>
-            <h2>Where do you want to go next?</h2>
-            <p>RootedOS should not end with an output. Choose a direction and keep asking better questions.</p>
+            <h2>Keep exploring</h2>
+            <p>Choose one path. RootedOS will keep helping you ask the next honest question instead of ending with a single output.</p>
           </div>
 
           <div class="trail-loop-modes" aria-label="Continue exploring options">
-            <button type="button" data-continue-mode="go_deeper">Go deeper</button>
-            <button type="button" data-continue-mode="make_practical">Make practical</button>
-            <button type="button" data-continue-mode="challenge_assumption">Challenge assumption</button>
-            <button type="button" data-continue-mode="help_journal">Journal it</button>
+            <button type="button" data-continue-mode="go_deeper"><strong>Go deeper</strong><span>Find the question underneath</span></button>
+            <button type="button" data-continue-mode="make_practical"><strong>Make practical</strong><span>Turn insight into action</span></button>
+            <button type="button" data-continue-mode="challenge_assumption"><strong>Challenge assumption</strong><span>Test what may be driving you</span></button>
+            <button type="button" data-open-journal-choices><strong>Journal it</strong><span>Choose a reflection prompt</span></button>
           </div>
+
+          ${showJournalChoices ? `
+            <article class="trail-journal-picker">
+              <div class="trail-question-meta">Journal reflection</div>
+              <h3>Choose how you want to journal this trail.</h3>
+              <div class="trail-answer-grid trail-journal-grid">
+                ${journalChoices.map((choice, index) => `
+                  <button type="button" class="trail-answer-btn trail-journal-choice" data-journal-choice="${index}">
+                    <strong>${escapeHtml(choice.label)}</strong>
+                    <span>${escapeHtml(choice.description)}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </article>
+          ` : ''}
+
+          ${selectedJournalPrompt ? `
+            <article class="trail-journal-selected">
+              <div class="trail-question-meta">Selected journal prompt</div>
+              <p>${escapeHtml(selectedJournalPrompt)}</p>
+              <a class="primary-btn" href="study.html">Open Journal Space</a>
+            </article>
+          ` : ''}
 
           ${latest ? `
             <article class="trail-question-node">
@@ -398,6 +447,26 @@
 
       loop.querySelectorAll('[data-continue-mode]').forEach(button => {
         button.addEventListener('click', () => requestNextQuestion(button.dataset.continueMode));
+      });
+
+      loop.querySelector('[data-open-journal-choices]')?.addEventListener('click', () => {
+        saveSession({ showJournalChoices: true });
+        setStatus('Choose a journal reflection path.');
+        renderTrailLoop();
+      });
+
+      loop.querySelectorAll('[data-journal-choice]').forEach(button => {
+        button.addEventListener('click', () => {
+          const choice = journalChoices[Number(button.dataset.journalChoice)];
+          if (!choice) return;
+          saveSession({
+            showJournalChoices: false,
+            journalPromptChoice: choice,
+            journalDraftPrompt: choice.prompt
+          });
+          setStatus('Journal prompt selected. Open the Journal Space when ready.');
+          renderTrailLoop();
+        });
       });
 
       loop.querySelectorAll('[data-answer-node]').forEach(button => {
@@ -527,7 +596,9 @@
           </section>
         `;
       }
-      if (journal && !journal.value) journal.placeholder = study.journalPrompt || 'Write what you are noticing...';
+      const currentForJournal = getSession() || session;
+      const chosenPrompt = cleanText(currentForJournal.journalDraftPrompt || '');
+      if (journal && !journal.value) journal.placeholder = chosenPrompt || study.journalPrompt || 'Write what you are noticing...';
     } catch (error) {
       hideLoading('');
       setStatus(error.message, 'error');
