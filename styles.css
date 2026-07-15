@@ -941,3 +941,170 @@ body[data-page="trail"] .trail-loop-history span{
   body[data-page="trail"] .trail-loop-shell{padding:18px;}
   body[data-page="trail"] .trail-loop-modes{grid-template-columns:1fr;}
 }
+
+/* FIX: Trail flip cards full-size layout */
+[data-trail-map],
+.trail-map {
+  width: min(1180px, 100%);
+  margin: 0 auto 28px;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.trail-node.trail-flip {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 280px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.trail-flip-card {
+  display: block !important;
+  width: 100% !important;
+  height: 280px !important;
+  min-height: 280px !important;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  perspective: 1200px;
+}
+
+.trail-flip-inner {
+  position: relative;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 280px !important;
+  transform-style: preserve-3d;
+  transition: transform .7s cubic-bezier(.16,1,.22,1);
+}
+
+.trail-flip-card.is-flipped .trail-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.trail-face {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 280px !important;
+  border-radius: 30px;
+  padding: 22px;
+  backface-visibility: hidden;
+  overflow: hidden;
+  border: 1px solid rgba(var(--accent-rgb), .28);
+  background:
+    radial-gradient(circle at 25% 12%, rgba(255,255,255,.18), transparent 22%),
+    radial-gradient(circle at 80% 70%, rgba(var(--accent-rgb),.18), transparent 42%),
+    linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.45),
+    inset 0 0 0 1px rgba(255,255,255,.035),
+    0 0 28px rgba(var(--accent-rgb),.1);
+}
+
+.trail-front {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.trail-back {
+  display: flex !important;
+  flex-direction: column;
+  transform: rotateY(180deg);
+}
+
+.trail-num {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  font-weight: 900;
+  background: rgba(var(--accent-rgb), .14);
+  border: 1px solid rgba(var(--accent-rgb), .28);
+}
+
+.trail-front-title {
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: .95;
+  letter-spacing: -.06em;
+  font-weight: 900;
+}
+
+.trail-front-hint {
+  width: fit-content;
+  border: 1px solid rgba(var(--accent-rgb), .28);
+  border-radius: 999px;
+  padding: 9px 12px;
+  color: rgba(244,241,234,.72);
+  background: rgba(var(--accent-rgb), .08);
+  font-size: 12px;
+}
+
+.trail-back-kicker {
+  flex: 0 0 auto;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.trail-back-text {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 10px;
+  color: rgba(244,241,234,.78);
+  line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-rgb), .65) rgba(255,255,255,.08);
+}
+
+.trail-back-text::-webkit-scrollbar {
+  width: 7px;
+}
+
+.trail-back-text::-webkit-scrollbar-track {
+  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+}
+
+.trail-back-text::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-rgb), .65);
+  border-radius: 999px;
+}
+
+@media(max-width:1100px){
+  [data-trail-map],
+  .trail-map {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media(max-width:620px){
+  [data-trail-map],
+  .trail-map {
+    grid-template-columns: 1fr;
+  }
+
+  .trail-flip-card,
+  .trail-flip-inner,
+  .trail-face {
+    height: 300px !important;
+    min-height: 300px !important;
+  }
+}
