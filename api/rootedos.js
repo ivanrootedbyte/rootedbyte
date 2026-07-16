@@ -1,8 +1,8 @@
 const { Readability } = require('@mozilla/readability');
 const { JSDOM } = require('jsdom');
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL_LIGHT = process.env.GEMINI_MODEL_LIGHT || 'gemini-2.5-flash-lite';
+const GEMINI_MODEL_DEEP = process.env.GEMINI_MODEL_DEEP || 'gemini-2.5-flash';
 const SAFE_LINK_MESSAGE = 'I could not reliably read this link. Paste the caption, transcript, article text, or a short summary, and I’ll build the Truth Trail from that.';
 
 function setCors(res) {
@@ -170,13 +170,16 @@ function extractJson(text) {
   return JSON.parse(match[0]);
 }
 
-async function callGemini(userPrompt) {
+async function callGemini(userPrompt, model) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('Missing GEMINI_API_KEY environment variable.');
   }
 
-  const response = await fetchWithTimeout(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
+  const selectedModel = cleanText(model || GEMINI_MODEL_DEEP);
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent`;
+
+  const response = await fetchWithTimeout(`${geminiUrl}?key=${encodeURIComponent(apiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -253,7 +256,7 @@ Detected inputType: ${inputType}
 Raw input: ${rawInput}
 Readable content: ${limitText(extractedText, 9000)}`;
 
-  const result = await callGemini(prompt);
+  const result = await callGemini(prompt, GEMINI_MODEL_LIGHT);
   return {
     ok: true,
     inputType: result.inputType || inputType,
@@ -292,7 +295,7 @@ Detected topic: ${detectedTopic}
 Raw input: ${rawInput}
 Content summary/source: ${extractedText}`;
 
-  const result = await callGemini(prompt);
+  const result = await callGemini(prompt, GEMINI_MODEL_LIGHT);
   if (!Array.isArray(result.options) || result.options.length < 3) {
     throw new Error('AI did not return three question options.');
   }
@@ -336,7 +339,7 @@ Question: ${cleanText(payload.questionTitle)}
 Selected answer/path: ${selectedAnswer}
 Theme: ${cleanText(payload.theme)}`;
 
-  const result = await callGemini(prompt);
+  const result = await callGemini(prompt, GEMINI_MODEL_DEEP);
   const trail = result.trailMap || {};
   ['signal', 'pressure', 'formation', 'truthAnchor', 'nextStep'].forEach(key => {
     if (!cleanText(trail[key])) throw new Error(`AI did not return trailMap.${key}`);
@@ -406,7 +409,7 @@ Previous question: ${cleanText(payload.previousQuestion)}
 User response to previous question: ${userResponse}
 Recent Question Trail history: ${JSON.stringify(questionTrail)}`;
 
-  const result = await callGemini(prompt);
+  const result = await callGemini(prompt, GEMINI_MODEL_LIGHT);
   const node = result.node || {};
   if (!cleanText(node.question)) throw new Error('AI did not return the next question.');
   if (!Array.isArray(node.options) || node.options.length < 3) throw new Error('AI did not return three answer paths.');
@@ -461,7 +464,7 @@ Question: ${cleanText(payload.questionTitle)}
 Selected answer: ${typeof payload.selectedAnswer === 'object' ? JSON.stringify(payload.selectedAnswer) : cleanText(payload.selectedAnswer)}
 Trail map: ${JSON.stringify(payload.trailMap || {})}`;
 
-  const result = await callGemini(prompt);
+  const result = await callGemini(prompt, GEMINI_MODEL_DEEP);
   if (!result.study || !cleanText(result.study.title)) throw new Error('AI did not return a study.');
   return { ok: true, study: result.study };
 }
