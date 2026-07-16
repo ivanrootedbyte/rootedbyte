@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RootedOS | Member Posts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=10">
+</head>
+<body data-page="posts">
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-mark"></span><span>RootedOS</span></a>
+      <nav class="nav-links"><a href="index.html">New trail</a><a href="journal.html">Journal</a><a href="account.html">My RootedOS</a></nav>
+    </header>
+    <section class="page-heading">
+      <span class="eyebrow">Member Posts</span>
+      <h1>Public reflections from the community</h1>
+      <p>Posts are public. Private journal entries remain in the author’s own browser unless they deliberately publish them.</p>
+      <div class="actions"><a class="primary-btn" href="account.html">Sign in / set username</a></div>
+    </section>
+    <section class="member-posts-grid" data-member-posts><p class="empty-state">Loading posts...</p></section>
+    <p class="status" data-status></p>
+  </main>
+  <script src="supabase.js?v=1"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      const wrap = document.querySelector('[data-member-posts]');
+      const status = document.querySelector('[data-status]');
+      const escapeHtml = value => String(value || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\"','&quot;').replaceAll("'",'&#039;');
+      try {
+        const posts = await window.RootedSupabase.listPosts();
+        if (!posts.length) { wrap.innerHTML = '<p class="empty-state">No public posts yet.</p>'; return; }
+        wrap.innerHTML = posts.map(post => `<article class="member-post-card"><div class="member-post-meta"><strong>@${escapeHtml(post.username)}</strong><span>${escapeHtml(new Date(post.created_at).toLocaleDateString())}</span></div><h2>${escapeHtml(post.title)}</h2><p>${escapeHtml(post.content)}</p></article>`).join('');
+      } catch (error) { wrap.innerHTML = ''; status.textContent = error.message || 'Member Posts could not load.'; status.dataset.mode = 'error'; }
+    });
+  </script>
+</body>
+</html>

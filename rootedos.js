@@ -626,6 +626,23 @@
       setStatus(`Journal saved. ${LIMITS.journalsPerMonth - usageCount('journal')} free saves left this month.`);
     });
 
+    $('[data-post-public]')?.addEventListener('click', async (event) => {
+      event.preventDefault();
+      const title = cleanText($('[data-public-post-title]')?.value || '');
+      const content = cleanText($('[data-public-post-content]')?.value || journal?.value || '');
+      try {
+        if (!window.RootedSupabase) throw new Error('Member Posts could not initialize. Refresh the page and try again.');
+        await window.RootedSupabase.createPost(title, content);
+        setStatus('Your journal reflection was posted publicly.');
+        const titleInput = $('[data-public-post-title]');
+        const contentInput = $('[data-public-post-content]');
+        if (titleInput) titleInput.value = '';
+        if (contentInput) contentInput.value = '';
+      } catch (error) {
+        setStatus(error.message || 'Could not publish this post.', 'error');
+      }
+    });
+
     $('[data-generate-ppt]')?.addEventListener('click', async (event) => {
       event.preventDefault();
       if (!canUse('ppt')) return setStatus(PAYGATE_MESSAGE, 'error');
@@ -648,22 +665,25 @@
   }
 
 
-  function loadScriptOnce(src) {
-    return new Promise((resolve, reject) => {
-      const existing = document.querySelector(`script[src="${src}"]`);
-      if (existing) {
-        existing.addEventListener('load', resolve, { once: true });
-        existing.addEventListener('error', reject, { once: true });
-        if (window.pptxgen) resolve();
-        return;
-      }
+  function getPptxConstructor() {
+    return window.pptxgen || window.PptxGenJS || window.pptxgenjs || null;
+  }
 
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
+  function loadScriptOnce(src, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+      if (getPptxConstructor()) return resolve();
+      const selector = `script[data-rootedos-pptx-src="${src}"]`;
+      const existing = document.querySelector(selector);
+      const script = existing || document.createElement('script');
+      const timer = setTimeout(() => reject(new Error(`Timed out loading ${src}`)), timeoutMs);
+      script.onload = () => { clearTimeout(timer); resolve(); };
+      script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error(`Failed to load ${src}`)); };
+      if (!existing) {
+        script.src = src;
+        script.async = true;
+        script.dataset.rootedosPptxSrc = src;
+        document.head.appendChild(script);
+      }
     });
   }
 
@@ -672,25 +692,20 @@
       'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js',
       'https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js'
     ];
-
+    if (getPptxConstructor()) return getPptxConstructor();
     for (const src of sources) {
       try {
         await loadScriptOnce(src);
-        if (window.pptxgen) return;
+        const Constructor = getPptxConstructor();
+        if (Constructor) return Constructor;
       } catch (_) {}
     }
+    throw new Error('PowerPoint generator could not load from jsDelivr or unpkg. Check your connection or content-blocking settings, then try again.');
   }
 
   async function generatePpt(session, journalText) {
-    if (!window.pptxgen) {
-      await loadPptxGen();
-    }
-
-    if (!window.pptxgen) {
-      throw new Error('PowerPoint generator could not load. Please refresh the page and try again.');
-    }
-
-    const pptx = new window.pptxgen();
+    const PptxConstructor = getPptxConstructor() || await loadPptxGen();
+    const pptx = new PptxConstructor();
     pptx.layout = 'LAYOUT_WIDE';
     pptx.author = 'RootedOS';
     pptx.subject = session.detectedTopic || 'RootedOS Study';
@@ -768,22 +783,54 @@
   }
 
 
-  function initAccount() {
+  async function initAccount() {
     const journalUsed = usageCount('journal');
     const pptUsed = usageCount('ppt');
     const entries = readJson(JOURNAL_KEY, []);
-
     const journalCount = $('[data-account-journal-count]');
     const pptCount = $('[data-account-ppt-count]');
     const savedCount = $('[data-account-saved-count]');
     const journalMeter = $('[data-account-journal-meter]');
     const pptMeter = $('[data-account-ppt-meter]');
-
     if (journalCount) journalCount.textContent = `Journals: ${journalUsed} / ${LIMITS.journalsPerMonth}`;
     if (pptCount) pptCount.textContent = `PPT: ${pptUsed} / ${LIMITS.pptPerMonth}`;
     if (savedCount) savedCount.textContent = `${entries.length} saved entr${entries.length === 1 ? 'y' : 'ies'} on this browser.`;
     if (journalMeter) journalMeter.style.setProperty('--meter', `${Math.min(100, (journalUsed / LIMITS.journalsPerMonth) * 100)}%`);
     if (pptMeter) pptMeter.style.setProperty('--meter', `${Math.min(100, (pptUsed / LIMITS.pptPerMonth) * 100)}%`);
+
+    const authStatus = $('[data-auth-status]');
+    const emailInput = $('[data-auth-email]');
+    const usernameInput = $('[data-auth-username]');
+    async function refreshAuth() {
+      try {
+        if (!window.RootedSupabase) throw new Error('Account service could not initialize.');
+        const user = await window.RootedSupabase.currentUser();
+        document.body.classList.toggle('is-signed-in', !!user);
+        if (!user) { if (authStatus) authStatus.textContent = 'Not signed in.'; return; }
+        const profile = await window.RootedSupabase.getProfile();
+        if (authStatus) authStatus.textContent = `Signed in as ${user.email}`;
+        if (usernameInput) usernameInput.value = profile?.username || '';
+      } catch (error) {
+        if (authStatus) authStatus.textContent = error.message;
+      }
+    }
+    $('[data-send-magic-link]')?.addEventListener('click', async () => {
+      try {
+        const email = cleanText(emailInput?.value || '');
+        if (!email) throw new Error('Enter your email address.');
+        await window.RootedSupabase.signInWithEmail(email);
+        if (authStatus) authStatus.textContent = 'Magic link sent. Check your email.';
+      } catch (error) { if (authStatus) authStatus.textContent = error.message; }
+    });
+    $('[data-save-username]')?.addEventListener('click', async () => {
+      try { await window.RootedSupabase.saveUsername(usernameInput?.value || ''); if (authStatus) authStatus.textContent = 'Public username saved.'; }
+      catch (error) { if (authStatus) authStatus.textContent = error.message; }
+    });
+    $('[data-sign-out]')?.addEventListener('click', async () => {
+      try { await window.RootedSupabase.signOut(); await refreshAuth(); }
+      catch (error) { if (authStatus) authStatus.textContent = error.message; }
+    });
+    await refreshAuth();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
