@@ -128,6 +128,9 @@
     const input = $('[data-rooted-input]');
     const quoteEls = $$('[data-daily-quote], [data-intro-quote]');
     const intro = $('[data-intro-modal]');
+    const sourceChip = $('[data-source-chip]');
+    const sourceChipLabel = $('[data-source-chip-label]');
+    const inputCount = $('[data-input-count]');
 
     quoteEls.forEach(el => { el.textContent = dailyQuote(); });
 
@@ -135,21 +138,75 @@
       intro.classList.add('is-open');
     }
 
+    function detectSourceLabel(value) {
+      const text = cleanText(value);
+      if (!text) return '';
+
+      try {
+        const url = new URL(text);
+        const host = url.hostname.replace(/^www\./, '').toLowerCase();
+        if (host.includes('youtube.com') || host.includes('youtu.be')) return 'YouTube link detected';
+        if (host.includes('instagram.com')) return 'Instagram link detected';
+        if (host.includes('tiktok.com')) return 'TikTok link detected';
+        if (host.includes('facebook.com') || host.includes('fb.watch')) return 'Facebook link detected';
+        return 'Article link detected';
+      } catch (_) {}
+
+      const biblePattern = /\b(genesis|exodus|leviticus|numbers|deuteronomy|joshua|judges|ruth|samuel|kings|chronicles|ezra|nehemiah|esther|job|psalms?|proverbs?|ecclesiastes|song of songs|isaiah|jeremiah|lamentations|ezekiel|daniel|hosea|joel|amos|obadiah|jonah|micah|nahum|habakkuk|zephaniah|haggai|zechariah|malachi|matthew|mark|luke|john|acts|romans|corinthians|galatians|ephesians|philippians|colossians|thessalonians|timothy|titus|philemon|hebrews|james|peter|jude|revelation)\b\s*\d{1,3}(:\d{1,3})?/i;
+      if (biblePattern.test(text)) return 'Bible passage detected';
+      if (text.length > 700) return 'Long-form text detected';
+      if (/\?$/.test(text)) return 'Question detected';
+      return 'Reflection detected';
+    }
+
+    function updateInputState() {
+      const value = input?.value || '';
+      const label = detectSourceLabel(value);
+      if (inputCount) inputCount.textContent = String(value.length);
+      if (sourceChip && sourceChipLabel) {
+        sourceChip.hidden = !label;
+        sourceChipLabel.textContent = label || '';
+      }
+      panel?.classList.toggle('has-input', !!cleanText(value));
+    }
+
+    function openPanel() {
+      if (!panel) return;
+      panel.classList.add('is-open');
+      panel.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('orb-workspace-open');
+      window.setTimeout(() => input?.focus(), 260);
+    }
+
+    function closePanel() {
+      if (!panel) return;
+      panel.classList.remove('is-open');
+      panel.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('orb-workspace-open');
+      orb?.focus();
+    }
+
     $('[data-close-intro]')?.addEventListener('click', () => {
       localStorage.setItem(INTRO_KEY, 'true');
       intro?.classList.remove('is-open');
-      panel?.classList.add('is-open');
-      input?.focus();
+      openPanel();
     });
 
     if (!orb || !panel || !form || !input) return;
 
-    orb.addEventListener('click', () => {
-      panel.classList.add('is-open');
-      input.focus();
+    orb.addEventListener('click', openPanel);
+    $$('[data-close-input]').forEach(button => button.addEventListener('click', closePanel));
+
+    panel.addEventListener('click', (event) => {
+      if (event.target === panel) closePanel();
     });
 
-    $('[data-close-input]')?.addEventListener('click', () => panel.classList.remove('is-open'));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && panel.classList.contains('is-open')) closePanel();
+    });
+
+    input.addEventListener('input', updateInputState);
+    updateInputState();
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -176,6 +233,7 @@
       });
 
       try {
+        panel.classList.add('is-processing');
         showLoading('Reading what you gave me...');
         const analyzed = await api('analyze_input', { rawInput: session.rawInput });
         saveSession({
@@ -187,6 +245,7 @@
         });
         window.location.href = 'questions.html';
       } catch (error) {
+        panel.classList.remove('is-processing');
         hideLoading('');
         setStatus(error.message, 'error');
       }
