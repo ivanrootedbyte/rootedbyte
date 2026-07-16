@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body data-page="index">
   <main class="page-shell home-shell minimal-home">
@@ -16,7 +16,8 @@
         <a class="home-brand-word" href="index.html">RootedOS</a>
         <nav class="home-nav-mini">
           <a href="about.html">About</a>
-          <a href="journal.html">Journal</a><a href="posts.html">Member Posts</a>
+          <a href="journal.html">Journal</a>
+          <a href="posts.html">Member Posts</a>
           <a href="account.html">My RootedOS</a>
           <a href="contact.html">Contact</a>
         </nav>
@@ -50,17 +51,45 @@
     </div>
   </section>
 
-  <section class="input-panel" data-input-panel aria-modal="true" aria-label="RootedOS input orb">
+  <section class="input-panel" data-input-panel aria-modal="true" role="dialog" aria-labelledby="orb-input-title" aria-hidden="true">
     <form class="input-card orb-input-card orb-lens-form" data-input-form>
-      <textarea data-rooted-input aria-label="RootedOS input" placeholder="Paste anything here..."></textarea>
-      <div class="actions orb-actions">
-        <button class="primary-btn" type="submit">Begin Trail</button>
-        <button class="secondary-btn" type="button" data-close-input>Close</button>
+      <button class="orb-panel-close" type="button" data-close-input aria-label="Close input orb">×</button>
+
+      <div class="orb-workspace-core" aria-hidden="true">
+        <span class="orb-core-ring orb-core-ring-one"></span>
+        <span class="orb-core-ring orb-core-ring-two"></span>
+        <span class="orb-core-light"></span>
       </div>
-      <p class="status" data-status></p>
+
+      <div class="orb-input-copy">
+        <span class="eyebrow">Truth Trail Discovery</span>
+        <h2 id="orb-input-title">Bring it into focus</h2>
+        <p>Paste a thought, article, link, question, or passage. RootedOS will help you notice what it may be shaping in you.</p>
+      </div>
+
+      <div class="source-chip" data-source-chip hidden>
+        <span data-source-chip-label>Text detected</span>
+      </div>
+
+      <label class="orb-input-field">
+        <span class="sr-only">RootedOS input</span>
+        <textarea data-rooted-input aria-label="RootedOS input" maxlength="12000" placeholder="Paste a thought, article, link, question, or passage…"></textarea>
+        <span class="orb-input-count" data-input-count>0</span>
+      </label>
+
+      <div class="actions orb-actions">
+        <button class="primary-btn orb-primary-action" type="submit">
+          <span>Begin the trail</span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <button class="secondary-btn orb-secondary-action" type="button" data-close-input>Close</button>
+      </div>
+
+      <p class="orb-privacy-note">Private by default. Nothing is saved unless you choose to save it.</p>
+      <p class="status orb-panel-status" data-status aria-live="polite"></p>
     </form>
   </section>
 
-  <script src="rootedos.js?v=10"></script>
+  <script src="rootedos.js?v=11"></script>
 </body>
 </html>
