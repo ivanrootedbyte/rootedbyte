@@ -1476,12 +1476,268 @@ body[data-page="index"] .frame::after{
 
 
 
-/* ROOTEDOS SHARING, CONTACT + ORB ZOOM PATCH v13 */
-.home-orb-trigger{transition:transform .46s cubic-bezier(.16,1,.22,1),filter .46s ease;transform-origin:center;}
-body.orb-zooming .home-orb-trigger{position:relative;z-index:160;transform:scale(2.35);filter:saturate(1.25) brightness(1.08);}
-body.orb-zooming .home-main-orb{animation-play-state:paused;box-shadow:inset 12px 12px 24px rgba(255,255,255,.12),inset -18px -18px 30px rgba(0,0,0,.78),0 0 0 1px rgba(255,255,255,.28),0 0 90px rgba(var(--accent-rgb),.34),0 0 180px rgba(var(--accent-rgb),.18);}
-body.orb-zooming .start-pane > :not(.home-orb-trigger){opacity:0;transform:translateY(10px);transition:opacity .28s ease,transform .28s ease;}
-body.orb-zooming .home-brand-row{opacity:.15;transition:opacity .3s ease;}
+/* ROOTEDOS SHARING, CONTACT + ORB DISSOLVE PATCH v14 */
+
+.home-orb-trigger{
+  position:relative;
+  z-index:5;
+  transform-origin:center;
+  will-change:transform,opacity,filter;
+  transition:
+    transform .72s cubic-bezier(.16,1,.22,1),
+    opacity .48s ease,
+    filter .62s ease;
+}
+
+.home-main-orb{
+  will-change:transform,opacity,filter;
+  transition:
+    opacity .46s ease,
+    filter .56s ease,
+    box-shadow .62s ease;
+}
+
+/* Stage 1: zoom toward the original orb */
+body.orb-zooming .home-orb-trigger{
+  position:relative;
+  z-index:160;
+  transform:scale(2.55);
+  filter:
+    saturate(1.25)
+    brightness(1.08);
+}
+
+body.orb-zooming .home-main-orb{
+  animation-play-state:paused;
+  box-shadow:
+    inset 12px 12px 24px rgba(255,255,255,.12),
+    inset -18px -18px 30px rgba(0,0,0,.76),
+    0 0 0 1px rgba(255,255,255,.28),
+    0 0 100px rgba(var(--accent-rgb),.36),
+    0 0 210px rgba(var(--accent-rgb),.2);
+}
+
+body.orb-zooming
+.start-pane > :not(.home-orb-trigger){
+  opacity:0;
+  transform:translateY(10px);
+  transition:
+    opacity .34s ease,
+    transform .34s ease;
+}
+
+body.orb-zooming .home-brand-row{
+  opacity:.1;
+  transition:opacity .4s ease;
+}
+
+/*
+ * Stage 2:
+ * Show the workspace background before displaying its
+ * controls. This prevents a sudden page replacement.
+ */
+.input-panel.is-preopening{
+  opacity:1;
+  pointer-events:none;
+  background:
+    radial-gradient(
+      circle at 50% 46%,
+      rgba(var(--accent-rgb),.07),
+      transparent 34%
+    ),
+    rgba(0,0,0,.08);
+  backdrop-filter:blur(2px);
+  transition:
+    opacity .3s ease,
+    background .7s ease,
+    backdrop-filter .7s ease;
+}
+
+.input-panel.is-preopening
+.input-card.orb-input-card{
+  opacity:0;
+  transform:scale(.7);
+  filter:blur(16px);
+}
+
+.input-panel.is-preopening
+.orb-workspace-core{
+  opacity:0;
+  transform:
+    translate(-50%,-50%)
+    scale(.5);
+}
+
+/*
+ * Stage 3:
+ * Cross-fade the home orb into the workspace orb.
+ */
+body.orb-dissolving
+.home-orb-trigger{
+  transform:scale(3.15);
+  opacity:0;
+  filter:
+    blur(14px)
+    saturate(1.35)
+    brightness(1.2);
+}
+
+body.orb-dissolving
+.home-main-orb{
+  opacity:0;
+  filter:blur(12px);
+}
+
+.input-panel.is-dissolve-opening{
+  opacity:1;
+  background:
+    radial-gradient(
+      circle at 50% 44%,
+      rgba(var(--accent-rgb),.2),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(141,92,255,.08),
+      transparent 52%
+    ),
+    rgba(0,0,0,.78);
+  backdrop-filter:blur(22px);
+}
+
+/*
+ * Override the older pop-in animation during this
+ * specific dissolve opening.
+ */
+.input-panel.is-open.is-dissolve-opening
+.input-card.orb-input-card{
+  animation:none;
+  opacity:1;
+  transform:scale(1);
+  filter:blur(0);
+  transition:
+    opacity .58s ease .08s,
+    transform .76s cubic-bezier(.16,1,.22,1),
+    filter .58s ease;
+}
+
+.input-panel.is-dissolve-opening
+.orb-workspace-core{
+  opacity:.72;
+  transform:
+    translate(-50%,-50%)
+    scale(1);
+  transition:
+    opacity .58s ease,
+    transform .8s cubic-bezier(.16,1,.22,1);
+}
+
+/*
+ * Reveal text and controls slightly after the orb core,
+ * producing a smooth discovery-space opening.
+ */
+.input-panel.is-dissolve-opening
+.orb-input-copy,
+.input-panel.is-dissolve-opening
+.source-chip,
+.input-panel.is-dissolve-opening
+.orb-input-field,
+.input-panel.is-dissolve-opening
+.orb-actions,
+.input-panel.is-dissolve-opening
+.orb-privacy-note,
+.input-panel.is-dissolve-opening
+.orb-panel-status,
+.input-panel.is-dissolve-opening
+.orb-panel-close{
+  animation:
+    orbWorkspaceContentReveal
+    .62s
+    .18s
+    cubic-bezier(.16,1,.22,1)
+    both;
+}
+
+@keyframes orbWorkspaceContentReveal{
+  from{
+    opacity:0;
+    transform:translateY(14px) scale(.985);
+    filter:blur(7px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    filter:blur(0);
+  }
+}
+
+/* Desktop transition */
+@media(min-width:761px){
+  body.orb-zooming .home-orb-trigger{
+    transform:scale(2.7);
+  }
+}
+
+/* Mobile transition */
+@media(max-width:760px){
+  body.orb-zooming .home-orb-trigger{
+    transform:scale(2.25);
+  }
+
+  body.orb-dissolving .home-orb-trigger{
+    transform:scale(3);
+  }
+
+  .input-panel.is-preopening
+  .input-card.orb-input-card{
+    transform:
+      translateY(26px)
+      scale(.9);
+  }
+
+  .input-panel.is-open.is-dissolve-opening
+  .input-card.orb-input-card{
+    transform:
+      translateY(0)
+      scale(1);
+  }
+
+  .input-panel.is-dissolve-opening
+  .orb-workspace-core{
+    opacity:.5;
+  }
+}
+
+/* Accessibility */
+@media(prefers-reduced-motion:reduce){
+  .home-orb-trigger,
+  .home-main-orb,
+  .input-panel,
+  .input-card.orb-input-card,
+  .orb-workspace-core{
+    transition:none!important;
+    animation:none!important;
+  }
+
+  body.orb-zooming .home-orb-trigger,
+  body.orb-dissolving .home-orb-trigger{
+    transform:none!important;
+    opacity:1;
+    filter:none;
+  }
+
+  .input-panel.is-preopening{
+    opacity:1;
+  }
+
+  .input-panel.is-open
+  .input-card.orb-input-card{
+    opacity:1;
+    transform:none;
+    filter:none;
+  }
+}
 
 .share-confirm-modal{position:fixed;inset:0;z-index:190;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(18px);opacity:0;pointer-events:none;transition:opacity .25s ease;}
 .share-confirm-modal.is-open{opacity:1;pointer-events:auto;}
