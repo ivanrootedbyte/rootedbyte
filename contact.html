@@ -7,25 +7,63 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body data-page="contact">
   <main class="page-shell">
     <header class="topbar">
       <a class="brand" href="index.html"><span class="brand-mark"></span><span>RootedOS</span></a>
-      <nav class="nav-links"><a href="index.html">Orb</a><a href="about.html">About</a><a href="journal.html">Journal</a></nav>
+      <nav class="nav-links"><a href="index.html">Orb</a><a href="about.html">About</a><a href="journal.html">Journal</a><a href="account.html">My RootedOS</a></nav>
     </header>
 
     <section class="page-heading contact-card">
       <span class="eyebrow">Contact RootedByte</span>
       <h1>Feedback, support, or collaboration.</h1>
-      <p>Use this page as your MVP contact page. Replace the email below with your real support address before launch.</p>
-      <div class="contact-links">
-        <a href="mailto:hello@rootedbyte.com"><span>Email</span><strong>hello@rootedbyte.com</strong></a>
-        <a href="index.html"><span>Try RootedOS</span><strong>Open the orb</strong></a>
-      </div>
+      <p>Send a message through this form. Do not include passwords, API keys, private journal entries, or other sensitive information.</p>
     </section>
+
+    <form class="contact-form-card" data-contact-form novalidate>
+      <div class="contact-form-grid">
+        <label>
+          <span>Name</span>
+          <input type="text" name="name" maxlength="80" autocomplete="name" required>
+        </label>
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" maxlength="160" autocomplete="email" required>
+        </label>
+        <label>
+          <span>Message type</span>
+          <select name="category" required>
+            <option value="">Choose one</option>
+            <option value="support">Product support</option>
+            <option value="feedback">Feedback</option>
+            <option value="collaboration">Collaboration</option>
+            <option value="privacy">Privacy request</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Subject</span>
+          <input type="text" name="subject" maxlength="140" required>
+        </label>
+      </div>
+      <label class="contact-message-field">
+        <span>Message</span>
+        <textarea name="message" minlength="10" maxlength="5000" required placeholder="Tell us what happened, what you expected, and any non-sensitive details that may help."></textarea>
+      </label>
+      <label class="contact-honeypot" aria-hidden="true">
+        <span>Website</span>
+        <input type="text" name="website" tabindex="-1" autocomplete="off">
+      </label>
+      <div class="actions">
+        <button class="primary-btn" type="submit" data-contact-submit>Send message</button>
+        <a class="secondary-btn" href="index.html">Return to the orb</a>
+      </div>
+      <p class="contact-privacy-note">Messages are stored securely for support follow-up. Basic anti-spam rate limiting uses a one-way hash rather than storing your raw IP address.</p>
+      <p class="status" data-contact-status aria-live="polite"></p>
+    </form>
   </main>
-  <script src="rootedos.js?v=8"></script>
+  <script src="rootedos.js?v=13"></script>
 </body>
 </html>

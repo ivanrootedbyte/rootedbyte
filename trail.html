@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body data-page="trail">
   <main class="page-shell">
@@ -23,14 +23,35 @@
       <span class="topic-pill">Selected path: <span data-selected></span></span>
       <div class="actions">
         <a class="primary-btn" href="study.html" data-open-study>Open Study Builder</a>
-        <a class="secondary-btn" href="#" data-share-trail>Share / Copy</a>
+        <button class="secondary-btn" type="button" data-share-trail>Share Trail</button>
       </div>
-      <p class="share-preview-note">Sharing copies a RootedOS-branded summary with a link back to the orb.</p>
+      <p class="share-preview-note">Share creates a public RootedOS link. Your private journal is never included.</p>
     </section>
 
     <section class="trail-path" data-trail-map></section>
-    <p class="status" data-status></p>
+    <p class="status" data-status aria-live="polite"></p>
   </main>
-  <script src="rootedos.js?v=10"></script>
+
+  <section class="share-confirm-modal" data-share-modal aria-hidden="true" aria-modal="true" role="dialog" aria-labelledby="share-modal-title">
+    <div class="share-confirm-card">
+      <span class="eyebrow">Public trail link</span>
+      <h2 id="share-modal-title">Share this Truth Trail?</h2>
+      <p>This creates a public link containing the topic, summary, selected path, and five Truth Trail nodes.</p>
+      <div class="share-safety-note">
+        <strong>Not included:</strong>
+        <span>Your private journal, account email, and unpublished exploration history.</span>
+      </div>
+      <p class="share-auth-note">You must be signed in with a public username so you can manage the shared trail later.</p>
+      <div class="actions">
+        <button class="primary-btn" type="button" data-create-share>Create public link</button>
+        <button class="secondary-btn" type="button" data-close-share>Cancel</button>
+        <a class="secondary-btn" href="account.html">Sign in / set username</a>
+      </div>
+      <p class="status" data-share-status aria-live="polite"></p>
+    </div>
+  </section>
+
+  <script src="supabase.js?v=13"></script>
+  <script src="rootedos.js?v=13"></script>
 </body>
 </html>

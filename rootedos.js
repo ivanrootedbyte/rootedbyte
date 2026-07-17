@@ -131,17 +131,14 @@
     const sourceChip = $('[data-source-chip]');
     const sourceChipLabel = $('[data-source-chip-label]');
     const inputCount = $('[data-input-count]');
+    let openingTimer = null;
 
     quoteEls.forEach(el => { el.textContent = dailyQuote(); });
-
-    if (intro && localStorage.getItem(INTRO_KEY) !== 'true') {
-      intro.classList.add('is-open');
-    }
+    if (intro && localStorage.getItem(INTRO_KEY) !== 'true') intro.classList.add('is-open');
 
     function detectSourceLabel(value) {
       const text = cleanText(value);
       if (!text) return '';
-
       try {
         const url = new URL(text);
         const host = url.hostname.replace(/^www\./, '').toLowerCase();
@@ -151,7 +148,6 @@
         if (host.includes('facebook.com') || host.includes('fb.watch')) return 'Facebook link detected';
         return 'Article link detected';
       } catch (_) {}
-
       const biblePattern = /\b(genesis|exodus|leviticus|numbers|deuteronomy|joshua|judges|ruth|samuel|kings|chronicles|ezra|nehemiah|esther|job|psalms?|proverbs?|ecclesiastes|song of songs|isaiah|jeremiah|lamentations|ezekiel|daniel|hosea|joel|amos|obadiah|jonah|micah|nahum|habakkuk|zephaniah|haggai|zechariah|malachi|matthew|mark|luke|john|acts|romans|corinthians|galatians|ephesians|philippians|colossians|thessalonians|timothy|titus|philemon|hebrews|james|peter|jude|revelation)\b\s*\d{1,3}(:\d{1,3})?/i;
       if (biblePattern.test(text)) return 'Bible passage detected';
       if (text.length > 700) return 'Long-form text detected';
@@ -170,79 +166,65 @@
       panel?.classList.toggle('has-input', !!cleanText(value));
     }
 
-    function openPanel() {
+    function revealWorkspace() {
       if (!panel) return;
       panel.classList.add('is-open');
       panel.setAttribute('aria-hidden', 'false');
       document.body.classList.add('orb-workspace-open');
-      window.setTimeout(() => input?.focus(), 260);
+      window.setTimeout(() => {
+        document.body.classList.remove('orb-zooming');
+        input?.focus();
+      }, 180);
+    }
+
+    function openPanel(withZoom = true) {
+      if (!panel || panel.classList.contains('is-open')) return;
+      window.clearTimeout(openingTimer);
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (withZoom && !reduceMotion) {
+        document.body.classList.add('orb-zooming');
+        openingTimer = window.setTimeout(revealWorkspace, 460);
+      } else {
+        revealWorkspace();
+      }
     }
 
     function closePanel() {
       if (!panel) return;
-      panel.classList.remove('is-open');
+      window.clearTimeout(openingTimer);
+      document.body.classList.remove('orb-zooming', 'orb-workspace-open');
+      panel.classList.remove('is-open', 'is-processing');
       panel.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('orb-workspace-open');
       orb?.focus();
     }
 
     $('[data-close-intro]')?.addEventListener('click', () => {
       localStorage.setItem(INTRO_KEY, 'true');
       intro?.classList.remove('is-open');
-      openPanel();
+      openPanel(false);
     });
 
     if (!orb || !panel || !form || !input) return;
-
-    orb.addEventListener('click', openPanel);
+    orb.addEventListener('click', () => openPanel(true));
     $$('[data-close-input]').forEach(button => button.addEventListener('click', closePanel));
-
-    panel.addEventListener('click', (event) => {
-      if (event.target === panel) closePanel();
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && panel.classList.contains('is-open')) closePanel();
-    });
-
+    panel.addEventListener('click', event => { if (event.target === panel) closePanel(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && panel.classList.contains('is-open')) closePanel(); });
     input.addEventListener('input', updateInputState);
     updateInputState();
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const rawInput = cleanText(input.value);
-      if (!rawInput) {
-        setStatus('Paste a link or type something first.', 'error');
-        input.focus();
-        return;
-      }
-
+      if (!rawInput) { setStatus('Paste a link or type something first.', 'error'); input.focus(); return; }
       const session = saveSession({
-        id: String(Date.now()),
-        createdAt: nowIso(),
-        rawInput,
-        inputType: '',
-        detectedTopic: '',
-        extractedText: '',
-        summary: '',
-        questionSet: null,
-        selectedAnswer: null,
-        trailMap: null,
-        study: null,
-        questionTrail: []
+        id: String(Date.now()), createdAt: nowIso(), rawInput, inputType: '', detectedTopic: '', extractedText: '', summary: '',
+        questionSet: null, selectedAnswer: null, trailMap: null, study: null, questionTrail: [], sharedTrailSlug: null
       });
-
       try {
         panel.classList.add('is-processing');
         showLoading('Reading what you gave me...');
         const analyzed = await api('analyze_input', { rawInput: session.rawInput });
-        saveSession({
-          inputType: analyzed.inputType,
-          detectedTopic: analyzed.detectedTopic,
-          extractedText: analyzed.extractedText,
-          summary: analyzed.summary,
-          confidence: analyzed.confidence
-        });
+        saveSession({ inputType: analyzed.inputType, detectedTopic: analyzed.detectedTopic, extractedText: analyzed.extractedText, summary: analyzed.summary, confidence: analyzed.confidence });
         window.location.href = 'questions.html';
       } catch (error) {
         panel.classList.remove('is-processing');
@@ -590,18 +572,77 @@
       window.location.href = 'study.html';
     });
 
-    $('[data-share-trail]')?.addEventListener('click', async (event) => {
+    const shareModal = $('[data-share-modal]');
+    const shareStatus = $('[data-share-status]');
+    const createShareButton = $('[data-create-share]');
+
+    function setShareStatus(message, mode = '') {
+      if (!shareStatus) return;
+      shareStatus.textContent = message || '';
+      shareStatus.dataset.mode = mode;
+    }
+
+    function closeShareModal() {
+      shareModal?.classList.remove('is-open');
+      shareModal?.setAttribute('aria-hidden', 'true');
+      setShareStatus('');
+    }
+
+    $('[data-share-trail]')?.addEventListener('click', (event) => {
       event.preventDefault();
+      shareModal?.classList.add('is-open');
+      shareModal?.setAttribute('aria-hidden', 'false');
+      createShareButton?.focus();
+    });
+
+    $$('[data-close-share]').forEach(button => button.addEventListener('click', closeShareModal));
+    shareModal?.addEventListener('click', event => { if (event.target === shareModal) closeShareModal(); });
+
+    createShareButton?.addEventListener('click', async () => {
       const current = getSession() || session;
-      const currentMap = current.trailMap || map;
-      const text = `RootedOS Truth Trail: ${current.detectedTopic}\n\nSignal: ${currentMap.signal}\nTruth Anchor: ${currentMap.truthAnchor}\nNext Step: ${currentMap.nextStep}`;
       try {
-        if (navigator.share) await navigator.share({ title: 'RootedOS Truth Trail', text });
-        else {
-          await navigator.clipboard.writeText(text);
-          setStatus('Truth Trail copied to clipboard.');
+        if (!window.RootedSupabase) throw new Error('Sharing could not initialize. Refresh the page and try again.');
+        createShareButton.disabled = true;
+        setShareStatus('Creating a public RootedOS link...');
+
+        let slug = cleanText(current.sharedTrailSlug || '');
+        if (!slug) {
+          let sourceUrl = '';
+          try { sourceUrl = new URL(current.rawInput).toString(); } catch (_) {}
+          const created = await window.RootedSupabase.createSharedTrail({
+            topic: current.detectedTopic || 'RootedOS Truth Trail',
+            summary: current.summary || current.trailMap?.signal || 'A shared RootedOS Truth Trail.',
+            rawInputPreview: sourceUrl ? '' : String(current.rawInput || '').slice(0, 600),
+            sourceUrl,
+            selectedPath: current.selectedAnswer || {},
+            trailMap: current.trailMap,
+            questionSeed: {
+              questionTitle: current.questionSet?.questionTitle || '',
+              contextLine: current.questionSet?.contextLine || ''
+            }
+          });
+          slug = created.share_slug;
+          saveSession({ sharedTrailSlug: slug });
         }
-      } catch (_) {}
+
+        const shareUrl = `${window.location.origin}/share/${encodeURIComponent(slug)}`;
+        closeShareModal();
+        if (navigator.share) {
+          await navigator.share({
+            title: `RootedOS Trail: ${current.detectedTopic || 'Truth Trail'}`,
+            text: 'Continue exploring this RootedOS Truth Trail.',
+            url: shareUrl
+          });
+          setStatus('Trail shared.');
+        } else {
+          await navigator.clipboard.writeText(shareUrl);
+          setStatus('Public trail link copied to your clipboard.');
+        }
+      } catch (error) {
+        if (error?.name !== 'AbortError') setShareStatus(error.message || 'Could not create the public link.', 'error');
+      } finally {
+        createShareButton.disabled = false;
+      }
     });
   }
 
@@ -842,6 +883,120 @@
   }
 
 
+
+  function initSharedTrail() {
+    const shared = window.__ROOTED_SHARED_TRAIL__;
+    if (!shared) return;
+
+    $$('[data-shared-map] .trail-flip-card').forEach(card => {
+      const toggle = () => card.classList.toggle('is-flipped');
+      card.addEventListener('click', event => { if (!event.target.closest('.trail-back-text')) toggle(); });
+      card.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } });
+    });
+
+    const questionWrap = $('[data-shared-question]');
+    let history = [];
+
+    function seedVisitorSession() {
+      const existing = getSession();
+      if (existing?.sharedSourceSlug === shared.share_slug) return existing;
+      return saveSession({
+        id: String(Date.now()),
+        createdAt: nowIso(),
+        rawInput: shared.source_url || shared.raw_input_preview || shared.summary,
+        inputType: shared.source_url ? 'article_link' : 'plain_text',
+        detectedTopic: shared.topic,
+        extractedText: shared.summary,
+        summary: shared.summary,
+        questionSet: shared.question_seed || null,
+        selectedAnswer: shared.selected_path || null,
+        trailMap: shared.trail_map,
+        study: null,
+        questionTrail: [],
+        sharedSourceSlug: shared.share_slug
+      });
+    }
+
+    function renderNode(node) {
+      if (!questionWrap || !node) return;
+      questionWrap.innerHTML = `<article class="trail-question-node shared-question-node"><div class="trail-question-meta">Question Trail</div>${node.reflection ? `<div class="trail-reflection-card"><strong>${escapeHtml(node.reflection.title || 'What surfaced')}</strong><p>${escapeHtml(node.reflection.insight || '')}</p><p>${escapeHtml(node.reflection.truthReframe || '')}</p><small>${escapeHtml(node.reflection.practice || '')}</small></div>` : ''}<h3>${escapeHtml(node.question || '')}</h3><div class="trail-answer-grid">${(node.options || []).map((option,index)=>`<button type="button" class="trail-answer-btn" data-shared-answer="${index}"><strong>${escapeHtml(option.label)}</strong><span>${escapeHtml(option.description)}</span></button>`).join('')}</div></article>`;
+      questionWrap.querySelectorAll('[data-shared-answer]').forEach(button => {
+        button.addEventListener('click', async () => {
+          const option = node.options?.[Number(button.dataset.sharedAnswer)];
+          if (!option) return;
+          history = history.map(item => item.id === node.id ? { ...item, selectedOption: option } : item);
+          saveSession({ questionTrail: history });
+          await requestSharedQuestion(node.mode, option, node.question);
+        });
+      });
+    }
+
+    async function requestSharedQuestion(mode, userResponse = null, previousQuestion = '') {
+      const current = seedVisitorSession();
+      try {
+        showLoading('Opening the next question...');
+        const result = await api('continue_trail', {
+          mode,
+          rawInput: current.rawInput,
+          extractedText: current.extractedText,
+          summary: current.summary,
+          detectedTopic: current.detectedTopic,
+          selectedAnswer: current.selectedAnswer,
+          trailMap: current.trailMap,
+          questionTrail: history,
+          previousQuestion,
+          userResponse
+        });
+        const node = { ...(result.node || {}), id: String(Date.now()), createdAt: nowIso(), mode };
+        history = [...history, node];
+        saveSession({ questionTrail: history });
+        hideLoading('Choose the answer that feels most honest right now.');
+        renderNode(node);
+      } catch (error) {
+        hideLoading('');
+        setStatus(error.message, 'error');
+      }
+    }
+
+    $$('[data-shared-mode]').forEach(button => button.addEventListener('click', () => requestSharedQuestion(button.dataset.sharedMode)));
+  }
+
+  function initContact() {
+    const form = $('[data-contact-form]');
+    const status = $('[data-contact-status]');
+    const submit = $('[data-contact-submit]');
+    if (!form) return;
+
+    function contactStatus(message, mode = '') {
+      if (!status) return;
+      status.textContent = message || '';
+      status.dataset.mode = mode;
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const payload = Object.fromEntries(new FormData(form).entries());
+      try {
+        submit.disabled = true;
+        contactStatus('Sending your message...');
+        const response = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.ok === false) throw new Error(result.message || 'The message could not be sent.');
+        form.reset();
+        contactStatus(result.message || 'Your message was sent successfully.');
+      } catch (error) {
+        contactStatus(error.message || 'The message could not be sent.', 'error');
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
+
   async function initAccount() {
     const journalUsed = usageCount('journal');
     const pptUsed = usageCount('ppt');
@@ -900,5 +1055,7 @@
     if (page === 'study') initStudy();
     if (page === 'journal') initJournal();
     if (page === 'account') initAccount();
+    if (page === 'shared-trail') initSharedTrail();
+    if (page === 'contact') initContact();
   });
 })();

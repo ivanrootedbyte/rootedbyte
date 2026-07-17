@@ -30,7 +30,7 @@
         if (window.supabase?.createClient) return;
       } catch (_) {}
     }
-    throw new Error('Member Posts could not load its secure account library. Please refresh and try again.');
+    throw new Error('RootedOS could not load its secure account library. Please refresh and try again.');
   }
 
   async function getClient() {
@@ -38,7 +38,7 @@
     clientPromise = (async () => {
       const response = await fetch('/api/public-config', { cache: 'no-store' });
       const config = await response.json().catch(() => ({}));
-      if (!response.ok || !config.configured) throw new Error(config.message || 'Member Posts is not configured.');
+      if (!response.ok || !config.configured) throw new Error(config.message || 'RootedOS accounts are not configured.');
       await ensureLibrary();
       return window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
@@ -107,5 +107,55 @@
     return data || [];
   }
 
-  window.RootedSupabase = { getClient, currentUser, signInWithEmail, signOut, getProfile, saveUsername, createPost, listPosts };
+  function randomSlug() {
+    const bytes = new Uint8Array(12);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 20);
+  }
+
+  async function createSharedTrail(snapshot) {
+    const user = await currentUser();
+    if (!user) throw new Error('Sign in before creating a public trail link.');
+    const profile = await getProfile();
+    if (!profile?.username) throw new Error('Set your public username in My RootedOS before sharing.');
+
+    const topic = String(snapshot?.topic || '').trim().slice(0, 160);
+    const summary = String(snapshot?.summary || '').trim().slice(0, 1200);
+    const rawInputPreview = String(snapshot?.rawInputPreview || '').trim().slice(0, 600);
+    const sourceUrl = String(snapshot?.sourceUrl || '').trim().slice(0, 1200);
+    if (!topic || !summary || !snapshot?.trailMap) throw new Error('This trail is not ready to share.');
+
+    const client = await getClient();
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const shareSlug = randomSlug();
+      const { data, error } = await client.from('shared_trails').insert({
+        owner_id: user.id,
+        share_slug: shareSlug,
+        topic,
+        summary,
+        raw_input_preview: rawInputPreview,
+        source_url: sourceUrl || null,
+        selected_path: snapshot.selectedPath || {},
+        trail_map: snapshot.trailMap,
+        question_seed: snapshot.questionSeed || {},
+        is_public: true
+      }).select('share_slug').single();
+
+      if (!error) return data;
+      if (error.code !== '23505') throw error;
+    }
+    throw new Error('Could not create a unique share link. Please try again.');
+  }
+
+  window.RootedSupabase = {
+    getClient,
+    currentUser,
+    signInWithEmail,
+    signOut,
+    getProfile,
+    saveUsername,
+    createPost,
+    listPosts,
+    createSharedTrail
+  };
 })();
