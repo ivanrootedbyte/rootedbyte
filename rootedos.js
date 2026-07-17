@@ -166,37 +166,143 @@
       panel?.classList.toggle('has-input', !!cleanText(value));
     }
 
-    function revealWorkspace() {
-      if (!panel) return;
-      panel.classList.add('is-open');
-      panel.setAttribute('aria-hidden', 'false');
-      document.body.classList.add('orb-workspace-open');
-      window.setTimeout(() => {
-        document.body.classList.remove('orb-zooming');
-        input?.focus();
-      }, 180);
-    }
+    function finishWorkspaceOpening() {
+  if (!panel) return;
 
-    function openPanel(withZoom = true) {
-      if (!panel || panel.classList.contains('is-open')) return;
-      window.clearTimeout(openingTimer);
-      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      if (withZoom && !reduceMotion) {
-        document.body.classList.add('orb-zooming');
-        openingTimer = window.setTimeout(revealWorkspace, 460);
-      } else {
-        revealWorkspace();
-      }
-    }
+  panel.classList.remove(
+    'is-preopening',
+    'is-dissolve-opening'
+  );
 
-    function closePanel() {
-      if (!panel) return;
-      window.clearTimeout(openingTimer);
-      document.body.classList.remove('orb-zooming', 'orb-workspace-open');
-      panel.classList.remove('is-open', 'is-processing');
-      panel.setAttribute('aria-hidden', 'true');
-      orb?.focus();
-    }
+  document.body.classList.remove(
+    'orb-zooming',
+    'orb-dissolving'
+  );
+
+  document.body.classList.add(
+    'orb-workspace-open'
+  );
+
+  input?.focus();
+}
+
+function revealWorkspace({
+  animated = true
+} = {}) {
+  if (!panel) return;
+
+  panel.setAttribute(
+    'aria-hidden',
+    'false'
+  );
+
+  if (!animated) {
+    panel.classList.add('is-open');
+    document.body.classList.add(
+      'orb-workspace-open'
+    );
+
+    input?.focus();
+    return;
+  }
+
+  /*
+   * Stage 2:
+   * Begin showing the workspace behind the enlarged
+   * home orb. The home orb and workspace core overlap
+   * briefly so the transition feels continuous.
+   */
+  panel.classList.add(
+    'is-preopening'
+  );
+
+  openingTimer = window.setTimeout(() => {
+    panel.classList.add(
+      'is-open',
+      'is-dissolve-opening'
+    );
+
+    document.body.classList.add(
+      'orb-dissolving',
+      'orb-workspace-open'
+    );
+
+    /*
+     * Stage 3:
+     * Remove temporary transition classes only after
+     * the cross-fade and scale transitions finish.
+     */
+    openingTimer = window.setTimeout(
+      finishWorkspaceOpening,
+      760
+    );
+  }, 260);
+}
+
+function openPanel(withZoom = true) {
+  if (
+    !panel ||
+    panel.classList.contains('is-open') ||
+    panel.classList.contains('is-preopening')
+  ) {
+    return;
+  }
+
+  window.clearTimeout(openingTimer);
+
+  const reduceMotion =
+    window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+  if (
+    withZoom &&
+    !reduceMotion
+  ) {
+    /*
+     * Stage 1:
+     * Enlarge the visible home orb before revealing
+     * the input workspace.
+     */
+    document.body.classList.add(
+      'orb-zooming'
+    );
+
+    revealWorkspace({
+      animated: true
+    });
+  } else {
+    revealWorkspace({
+      animated: false
+    });
+  }
+}
+
+function closePanel() {
+  if (!panel) return;
+
+  window.clearTimeout(openingTimer);
+
+  document.body.classList.remove(
+    'orb-zooming',
+    'orb-dissolving',
+    'orb-workspace-open'
+  );
+
+  panel.classList.remove(
+    'is-open',
+    'is-preopening',
+    'is-dissolve-opening',
+    'is-processing'
+  );
+
+  panel.setAttribute(
+    'aria-hidden',
+    'true'
+  );
+
+  orb?.focus();
+}
 
     $('[data-close-intro]')?.addEventListener('click', () => {
       localStorage.setItem(INTRO_KEY, 'true');
