@@ -279,34 +279,114 @@ Formation focus:
 
 Output rules:
 - Return strict JSON only.
-- No markdown fences.
-- No commentary outside JSON.`;
+- Return exactly one complete JSON object.
+- No Markdown fences.
+- No commentary before or after the JSON.
+- Do not return multiple JSON objects.`;
 }
 
 function extractJson(text) {
-  const raw = String(text || '').trim();
+  const raw = String(text || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
 
   if (!raw) {
-    throw new Error('Empty AI response');
+    const error = new Error(
+      'Empty AI response'
+    );
+
+    error.code = 'INVALID_AI_JSON';
+    throw error;
   }
 
   try {
     return JSON.parse(raw);
   } catch (_) {}
 
-  const match = raw.match(/\{[\s\S]*\}/);
+  let startIndex = -1;
+  let depth = 0;
+  let insideString = false;
+  let escaping = false;
 
-  if (!match) {
-    throw new Error(
-      'No JSON object in AI response'
-    );
+  for (
+    let index = 0;
+    index < raw.length;
+    index += 1
+  ) {
+    const character = raw[index];
+
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+
+    if (
+      character === '\\' &&
+      insideString
+    ) {
+      escaping = true;
+      continue;
+    }
+
+    if (character === '"') {
+      insideString = !insideString;
+      continue;
+    }
+
+    if (insideString) {
+      continue;
+    }
+
+    if (character === '{') {
+      if (depth === 0) {
+        startIndex = index;
+      }
+
+      depth += 1;
+      continue;
+    }
+
+    if (
+      character === '}' &&
+      depth > 0
+    ) {
+      depth -= 1;
+
+      if (
+        depth === 0 &&
+        startIndex >= 0
+      ) {
+        const candidate = raw.slice(
+          startIndex,
+          index + 1
+        );
+
+        try {
+          return JSON.parse(candidate);
+        } catch (_) {
+          startIndex = -1;
+        }
+      }
+    }
   }
 
-  return JSON.parse(match[0]);
+  const error = new Error(
+    'RootedOS received an incomplete or invalid AI response.'
+  );
+
+  error.code = 'INVALID_AI_JSON';
+  throw error;
 }
 
-async function callGemini(userPrompt, model) {
-  const apiKey = process.env.GEMINI_API_KEY;
+async function callGemini(
+  userPrompt,
+  model,
+  options = {}
+) {
+  const apiKey =
+    process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     throw new Error(
@@ -318,80 +398,160 @@ async function callGemini(userPrompt, model) {
     model || GEMINI_MODEL_DEEP
   );
 
+  const responseSchema =
+    options.responseSchema || null;
+
+  const maxOutputTokens =
+    Number(options.maxOutputTokens || 4096);
+
   const geminiUrl =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
     `${encodeURIComponent(selectedModel)}:generateContent`;
 
-  const response = await fetchWithTimeout(
-    `${geminiUrl}?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text:
-                  `${buildSystemPrompt()}\n\n` +
-                  userPrompt
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.55,
-          topP: 0.9,
-          maxOutputTokens: 4096,
-          responseMimeType:
-            'application/json'
-        }
-      })
-    },
-    50000
-  );
+  const requestUrl =
+    `${geminiUrl}?key=${encodeURIComponent(apiKey)}`;
 
-  const data = await response
-    .json()
-    .catch(() => ({}));
+  for (
+    let attempt = 1;
+    attempt <= 2;
+    attempt += 1
+  ) {
+    const retryInstruction =
+      attempt === 2
+        ? `
 
-  if (!response.ok) {
-    const apiMessage =
-      data?.error?.message ||
-      `Gemini request failed with ${response.status}`;
+IMPORTANT RETRY:
+Return exactly one complete JSON object.
+Do not use Markdown.
+Do not add text before or after the JSON.
+Do not include unescaped quotation marks inside string values.
+Make every array and object syntactically complete.`
+        : '';
 
-    const isQuota =
-      response.status === 429 ||
-      /quota|rate limit|rate-limits|exceeded|retry/i.test(
-        apiMessage
-      );
+    const generationConfig = {
+      temperature:
+        attempt === 1
+          ? 0.45
+          : 0.15,
+      topP: 0.9,
+      maxOutputTokens,
+      responseMimeType:
+        'application/json'
+    };
 
-    if (isQuota) {
-      throw new Error(
-        'RootedOS is cooling down because the AI request limit was reached. Please wait 30–60 seconds and try again.'
-      );
+    if (responseSchema) {
+      generationConfig.responseSchema =
+        responseSchema;
     }
 
-    throw new Error(apiMessage);
+    const response =
+      await fetchWithTimeout(
+        requestUrl,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    text:
+                      `${buildSystemPrompt()}\n\n` +
+                      `${userPrompt}${retryInstruction}`
+                  }
+                ]
+              }
+            ],
+            generationConfig
+          })
+        },
+        50000
+      );
+
+    const data = await response
+      .json()
+      .catch(() => ({}));
+
+    if (!response.ok) {
+      const apiMessage =
+        data?.error?.message ||
+        `Gemini request failed with ${response.status}`;
+
+      const isQuota =
+        response.status === 429 ||
+        /quota|rate limit|rate-limits|exceeded|retry/i.test(
+          apiMessage
+        );
+
+      if (isQuota) {
+        throw new Error(
+          'RootedOS is cooling down because the AI request limit was reached. Please wait 30–60 seconds and try again.'
+        );
+      }
+
+      throw new Error(apiMessage);
+    }
+
+    const candidate =
+      data?.candidates?.[0];
+
+    const finishReason = cleanText(
+      candidate?.finishReason || ''
+    );
+
+    const text =
+      candidate?.content?.parts
+        ?.map((part) => part.text || '')
+        .join('\n') ||
+      '';
+
+    if (!text) {
+      if (attempt === 1) {
+        continue;
+      }
+
+      const error = new Error(
+        finishReason === 'MAX_TOKENS'
+          ? 'RootedOS received a truncated AI response.'
+          : 'Gemini returned no usable content.'
+      );
+
+      error.code = 'INVALID_AI_JSON';
+      throw error;
+    }
+
+    try {
+      return extractJson(text);
+    } catch (error) {
+      if (
+        error?.code !==
+          'INVALID_AI_JSON' ||
+        attempt === 2
+      ) {
+        throw error;
+      }
+    }
   }
 
-  const text =
-    data?.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text || '')
-      .join('\n') ||
-    '';
+  const error = new Error(
+    'RootedOS received an incomplete AI response.'
+  );
 
-  return extractJson(text);
+  error.code = 'INVALID_AI_JSON';
+  throw error;
 }
 
 function requireText(value, name) {
   const text = cleanText(value);
 
   if (!text) {
-    throw new Error(`Missing ${name}`);
+    throw new Error(
+      `Missing ${name}`
+    );
   }
 
   return text;
@@ -456,7 +616,8 @@ Readable content: ${limitText(extractedText, 9000)}`;
   return {
     ok: true,
     inputType:
-      result.inputType || inputType,
+      result.inputType ||
+      inputType,
     detectedTopic: cleanText(
       result.detectedTopic ||
         'Untitled truth trail'
@@ -487,7 +648,8 @@ async function generateQuestions(payload) {
   );
 
   const extractedText = limitText(
-    payload.extractedText || rawInput,
+    payload.extractedText ||
+      rawInput,
     9000
   );
 
@@ -580,7 +742,8 @@ async function generateTrail(payload) {
           payload.selectedAnswer
         )
       : cleanText(
-          payload.selectedAnswer || ''
+          payload.selectedAnswer ||
+            ''
         );
 
   const prompt = `Create a specific RootedOS Truth Trail Map. Do not use generic filler.
@@ -630,14 +793,43 @@ Theme: ${cleanText(payload.theme)}`;
 
   return {
     ok: true,
-    trailMap: trail
+    trailMap: {
+      signal: cleanText(
+        trail.signal
+      ),
+      pressure: cleanText(
+        trail.pressure
+      ),
+      formation: cleanText(
+        trail.formation
+      ),
+      truthAnchor: cleanText(
+        trail.truthAnchor
+      ),
+      nextStep: cleanText(
+        trail.nextStep
+      )
+    }
   };
 }
 
 async function continueTrail(payload) {
   const mode = cleanText(
-    payload.mode || 'go_deeper'
+    payload.mode ||
+      'go_deeper'
   );
+
+  const allowedModes = new Set([
+    'go_deeper',
+    'make_practical',
+    'challenge_assumption',
+    'help_journal'
+  ]);
+
+  const safeMode =
+    allowedModes.has(mode)
+      ? mode
+      : 'go_deeper';
 
   const modeInstruction = {
     go_deeper:
@@ -651,22 +843,28 @@ async function continueTrail(payload) {
 
     help_journal:
       'Ask a journal-friendly question that helps the user write honestly without spiraling or performing.'
-  }[mode] ||
-    'Ask the next honest question that helps the user continue exploring.';
+  }[safeMode];
 
   const questionTrail =
-    Array.isArray(payload.questionTrail)
-      ? payload.questionTrail.slice(-6)
+    Array.isArray(
+      payload.questionTrail
+    )
+      ? payload.questionTrail.slice(
+          -6
+        )
       : [];
 
-  const hasUserResponse = Boolean(
-    cleanText(
-      payload.userResponse?.label ||
-        payload.userResponse?.description ||
-        payload.userResponse ||
-        ''
-    )
-  );
+  const hasUserResponse =
+    Boolean(
+      cleanText(
+        payload.userResponse
+          ?.label ||
+          payload.userResponse
+            ?.description ||
+          payload.userResponse ||
+          ''
+      )
+    );
 
   const userResponse =
     typeof payload.userResponse ===
@@ -675,7 +873,8 @@ async function continueTrail(payload) {
           payload.userResponse
         )
       : cleanText(
-          payload.userResponse || ''
+          payload.userResponse ||
+            ''
         );
 
   const selectedAnswer =
@@ -685,21 +884,22 @@ async function continueTrail(payload) {
           payload.selectedAnswer
         )
       : cleanText(
-          payload.selectedAnswer || ''
+          payload.selectedAnswer ||
+            ''
         );
 
   const prompt = `RootedOS should not end with a final output. Continue the user's Question Trail.
 
 The follow-up question must keep moving the user toward Bible-grounded truth, not endless self-expression. Help the user examine feelings, desires, fears, assumptions, and cultural pressure under biblical wisdom. Be compassionate, but do not avoid moral clarity where the Bible gives clarity.
 
-Direction: ${mode}
+Direction: ${safeMode}
 Direction instruction: ${modeInstruction}
 
 Return JSON exactly:
 {
   "ok": true,
   "node": {
-    "mode": "${mode}",
+    "mode": "${safeMode}",
     "title": "short title for this question node",
     "contextLine": "one specific line connecting the previous trail to this question",
     "question": "one specific next honest question, not generic",
@@ -737,6 +937,7 @@ Rules:
 - Keep asking the next useful question.
 - Do not sound like a final essay.
 - Be specific to the original input, trail map, and user's selected answers.
+- Return one complete JSON object only.
 - Do not invent Scripture references.
 - Avoid preachy or churchy tone by default.
 - Do not soften biblical truth into vague cultural affirmation.
@@ -747,17 +948,18 @@ Extracted text: ${limitText(payload.extractedText || '', 7000)}
 Detected topic: ${cleanText(payload.detectedTopic)}
 Summary: ${cleanText(payload.summary)}
 Selected answer/path: ${selectedAnswer}
-Truth Trail Map: ${JSON.stringify(payload.trailMap || {})}
+Truth Trail Map: ${limitText(JSON.stringify(payload.trailMap || {}), 4000)}
 Previous question: ${cleanText(payload.previousQuestion)}
 User response to previous question: ${userResponse}
-Recent Question Trail history: ${JSON.stringify(questionTrail)}`;
+Recent Question Trail history: ${limitText(JSON.stringify(questionTrail), 5000)}`;
 
   const result = await callGemini(
     prompt,
     GEMINI_MODEL_LIGHT
   );
 
-  const node = result.node || {};
+  const node =
+    result.node || {};
 
   if (!cleanText(node.question)) {
     throw new Error(
@@ -777,7 +979,7 @@ Recent Question Trail history: ${JSON.stringify(questionTrail)}`;
   return {
     ok: true,
     node: {
-      mode,
+      mode: safeMode,
       title: cleanText(
         node.title ||
           'Question Trail'
@@ -801,27 +1003,34 @@ Recent Question Trail history: ${JSON.stringify(questionTrail)}`;
             option.theme
           )
         })),
-      reflection: node.reflection
-        ? {
-            title: cleanText(
-              node.reflection.title ||
-                'What surfaced'
-            ),
-            insight: cleanText(
-              node.reflection.insight ||
-                ''
-            ),
-            truthReframe: cleanText(
-              node.reflection
-                .truthReframe ||
-                ''
-            ),
-            practice: cleanText(
-              node.reflection.practice ||
-                ''
-            )
-          }
-        : null
+      reflection:
+        node.reflection &&
+        typeof node.reflection ===
+          'object'
+          ? {
+              title: cleanText(
+                node.reflection
+                  .title ||
+                  'What surfaced'
+              ),
+              insight: cleanText(
+                node.reflection
+                  .insight ||
+                  ''
+              ),
+              truthReframe:
+                cleanText(
+                  node.reflection
+                    .truthReframe ||
+                    ''
+                ),
+              practice: cleanText(
+                node.reflection
+                  .practice ||
+                  ''
+              )
+            }
+          : null
     }
   };
 }
@@ -834,14 +1043,109 @@ async function generateStudy(payload) {
           payload.selectedAnswer
         )
       : cleanText(
-          payload.selectedAnswer || ''
+          payload.selectedAnswer ||
+            ''
         );
 
-  const prompt = `Create a concise, useful RootedOS Study Builder output for journaling and optional PPT.
+  const studyResponseSchema = {
+    type: 'OBJECT',
+    properties: {
+      ok: {
+        type: 'BOOLEAN'
+      },
+      study: {
+        type: 'OBJECT',
+        properties: {
+          title: {
+            type: 'STRING'
+          },
+          topic: {
+            type: 'STRING'
+          },
+          summary: {
+            type: 'STRING'
+          },
+          truthTrail: {
+            type: 'ARRAY',
+            items: {
+              type: 'STRING'
+            }
+          },
+          studyNotes: {
+            type: 'ARRAY',
+            items: {
+              type: 'STRING'
+            }
+          },
+          reflectionPrompts: {
+            type: 'ARRAY',
+            items: {
+              type: 'STRING'
+            }
+          },
+          practicalNextSteps: {
+            type: 'ARRAY',
+            items: {
+              type: 'STRING'
+            }
+          },
+          truthAnchors: {
+            type: 'ARRAY',
+            items: {
+              type: 'STRING'
+            }
+          },
+          journalPrompt: {
+            type: 'STRING'
+          }
+        },
+        required: [
+          'title',
+          'topic',
+          'summary',
+          'truthTrail',
+          'studyNotes',
+          'reflectionPrompts',
+          'practicalNextSteps',
+          'truthAnchors',
+          'journalPrompt'
+        ]
+      }
+    },
+    required: [
+      'ok',
+      'study'
+    ]
+  };
 
-Study notes and truth anchors must be rooted in biblical wisdom, not cultural self-definition or vague affirmation. Be compassionate and accessible, but keep moral and spiritual clarity. Do not quote or cite Scripture unless the user requested Scripture or entered a Bible passage.
+  const prompt = `Create a concise, useful RootedOS Study Builder output for journaling and optional PowerPoint generation.
 
-Return JSON exactly:
+Study notes and truth anchors must be rooted in biblical wisdom, not cultural self-definition or vague affirmation.
+
+Be compassionate and accessible, but retain moral and spiritual clarity.
+
+Do not quote or cite Scripture unless:
+- the user requested Scripture,
+- the user entered a Bible passage, or
+- the user requested Bible study.
+
+Do not invent Scripture references.
+
+Output requirements:
+- Return exactly one JSON object.
+- Keep every item concise.
+- Use 3 to 5 truthTrail items.
+- Use 4 to 6 studyNotes.
+- Use 3 to 5 reflectionPrompts.
+- Use 3 to 5 practicalNextSteps.
+- Use 3 to 5 truthAnchors.
+- Keep each array item below 240 characters.
+- Keep the summary below 700 characters.
+- Keep the journalPrompt below 500 characters.
+- Do not place unescaped quotation marks inside string values.
+- Do not include Markdown.
+
+Required structure:
 {
   "ok": true,
   "study": {
@@ -849,48 +1153,149 @@ Return JSON exactly:
     "topic": "specific topic",
     "summary": "specific 2-4 sentence summary",
     "truthTrail": [
-      "3-5 concise items"
+      "concise item"
     ],
     "studyNotes": [
-      "4-6 concise notes"
+      "concise note"
     ],
     "reflectionPrompts": [
-      "3-5 specific prompts"
+      "specific prompt"
     ],
     "practicalNextSteps": [
-      "3-5 practical next steps"
+      "practical step"
     ],
     "truthAnchors": [
-      "3-5 rooted truth anchors, no invented references"
+      "rooted truth anchor"
     ],
     "journalPrompt": "one specific journal prompt"
   }
 }
 
-Raw input: ${cleanText(payload.rawInput)}
-Extracted text: ${limitText(payload.extractedText || '', 9000)}
-Summary: ${cleanText(payload.summary)}
-Question: ${cleanText(payload.questionTitle)}
-Selected answer: ${selectedAnswer}
-Trail map: ${JSON.stringify(payload.trailMap || {})}`;
+Raw input:
+${limitText(payload.rawInput || '', 3500)}
+
+Extracted text:
+${limitText(payload.extractedText || '', 6500)}
+
+Summary:
+${limitText(payload.summary || '', 1200)}
+
+Question:
+${limitText(payload.questionTitle || '', 500)}
+
+Selected answer:
+${limitText(selectedAnswer, 1000)}
+
+Trail map:
+${limitText(JSON.stringify(payload.trailMap || {}), 3500)}`;
 
   const result = await callGemini(
     prompt,
-    GEMINI_MODEL_DEEP
+    GEMINI_MODEL_DEEP,
+    {
+      responseSchema:
+        studyResponseSchema,
+      maxOutputTokens: 4096
+    }
   );
 
+  const study =
+    result?.study;
+
   if (
-    !result.study ||
-    !cleanText(result.study.title)
+    !study ||
+    typeof study !== 'object'
   ) {
     throw new Error(
-      'AI did not return a study.'
+      'AI did not return a complete study.'
     );
+  }
+
+  const requiredStringFields = [
+    'title',
+    'topic',
+    'summary',
+    'journalPrompt'
+  ];
+
+  for (
+    const field of
+      requiredStringFields
+  ) {
+    if (!cleanText(study[field])) {
+      throw new Error(
+        `AI did not return study.${field}`
+      );
+    }
+  }
+
+  const requiredArrayFields = [
+    'truthTrail',
+    'studyNotes',
+    'reflectionPrompts',
+    'practicalNextSteps',
+    'truthAnchors'
+  ];
+
+  const normalizedArrays = {};
+
+  for (
+    const field of
+      requiredArrayFields
+  ) {
+    if (
+      !Array.isArray(study[field]) ||
+      study[field].length === 0
+    ) {
+      throw new Error(
+        `AI did not return study.${field}`
+      );
+    }
+
+    normalizedArrays[field] =
+      study[field]
+        .map((item) =>
+          cleanText(item)
+        )
+        .filter(Boolean)
+        .slice(0, 6);
+
+    if (
+      normalizedArrays[field]
+        .length === 0
+    ) {
+      throw new Error(
+        `AI returned an empty study.${field}`
+      );
+    }
   }
 
   return {
     ok: true,
-    study: result.study
+    study: {
+      title: cleanText(
+        study.title
+      ),
+      topic: cleanText(
+        study.topic
+      ),
+      summary: cleanText(
+        study.summary
+      ),
+      truthTrail:
+        normalizedArrays.truthTrail,
+      studyNotes:
+        normalizedArrays.studyNotes,
+      reflectionPrompts:
+        normalizedArrays.reflectionPrompts,
+      practicalNextSteps:
+        normalizedArrays.practicalNextSteps,
+      truthAnchors:
+        normalizedArrays.truthAnchors,
+      journalPrompt: cleanText(
+        study.journalPrompt
+      )
+    }
   };
 }
 
@@ -901,14 +1306,21 @@ module.exports = async function handler(
   setCors(res);
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    return res
+      .status(204)
+      .end();
   }
 
   if (req.method !== 'POST') {
-    return sendJson(res, 405, {
-      ok: false,
-      message: 'Method not allowed.'
-    });
+    return sendJson(
+      res,
+      405,
+      {
+        ok: false,
+        message:
+          'Method not allowed.'
+      }
+    );
   }
 
   try {
@@ -921,7 +1333,10 @@ module.exports = async function handler(
       payload.action
     );
 
-    if (action === 'analyze_input') {
+    if (
+      action ===
+      'analyze_input'
+    ) {
       return sendJson(
         res,
         200,
@@ -929,15 +1344,23 @@ module.exports = async function handler(
       );
     }
 
-    if (action === 'generate_questions') {
+    if (
+      action ===
+      'generate_questions'
+    ) {
       return sendJson(
         res,
         200,
-        await generateQuestions(payload)
+        await generateQuestions(
+          payload
+        )
       );
     }
 
-    if (action === 'generate_trail') {
+    if (
+      action ===
+      'generate_trail'
+    ) {
       return sendJson(
         res,
         200,
@@ -945,7 +1368,10 @@ module.exports = async function handler(
       );
     }
 
-    if (action === 'generate_study') {
+    if (
+      action ===
+      'generate_study'
+    ) {
       return sendJson(
         res,
         200,
@@ -953,7 +1379,10 @@ module.exports = async function handler(
       );
     }
 
-    if (action === 'continue_trail') {
+    if (
+      action ===
+      'continue_trail'
+    ) {
       return sendJson(
         res,
         200,
@@ -961,27 +1390,39 @@ module.exports = async function handler(
       );
     }
 
-    return sendJson(res, 400, {
-      ok: false,
-      message:
-        'Unknown RootedOS action.'
-    });
+    return sendJson(
+      res,
+      400,
+      {
+        ok: false,
+        message:
+          'Unknown RootedOS action.'
+      }
+    );
   } catch (error) {
     const isTimeout =
       error?.code ===
       'REQUEST_TIMEOUT';
 
+    const isInvalidAiJson =
+      error?.code ===
+      'INVALID_AI_JSON';
+
     return sendJson(
       res,
-      isTimeout ? 504 : 500,
+      isTimeout
+        ? 504
+        : 500,
       {
         ok: false,
         message: isTimeout
           ? 'RootedOS took too long to build this step. Please try again.'
-          : (
-              error.message ||
-              'RootedOS could not complete this request.'
-            )
+          : isInvalidAiJson
+            ? 'RootedOS received an incomplete AI response. Please try this step again.'
+            : (
+                error.message ||
+                'RootedOS could not complete this request.'
+              )
       }
     );
   }
